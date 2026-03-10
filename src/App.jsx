@@ -2,6 +2,11 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Anchor, Compass, Lock, Skull, Unlock } from "lucide-react";
 import Isla1Loguetown from "./components/Isla1Loguetown";
+import Isla2Water7 from "./components/Isla2Water7";
+import Isla3EniesLobby from "./components/Isla3EniesLobby";
+import Isla4Sabaody from "./components/Isla4Sabaody";
+import Isla5ImpelDown from "./components/Isla5ImpelDown";
+import Isla6LaughTale from "./components/Isla6LaughTale";
 import { usePirateAudio } from "./hooks/usePirateAudio";
 
 export default function App() {
@@ -9,6 +14,10 @@ export default function App() {
   const [unlockedIslands, setUnlockedIslands] = useState({
     isla1: true,
     isla2: false,
+    isla3: false,
+    isla4: false,
+    isla5: false,
+    isla6: false,
   });
   const { playClick, playError, playSuccess } = usePirateAudio();
 
@@ -27,7 +36,8 @@ export default function App() {
       ...prev,
       isla2: true,
     }));
-    setCurrentScreen("menu");
+    // en lugar de volver al menú, entramos de inmediato en la isla 2
+    setCurrentScreen("isla2");
   };
 
   const goToIsla2 = () => {
@@ -157,29 +167,62 @@ export default function App() {
         )}
 
         {currentScreen === "isla2" && (
-          <motion.section
+          <motion.div
             initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4 }}
-            className="mx-auto w-full max-w-3xl rounded-3xl border-4 border-amber-800/70 bg-gradient-to-b from-amber-50 via-amber-100 to-yellow-100 p-8 text-blue-950 shadow-[0_18px_40px_rgba(0,0,0,0.35)]"
           >
-            <p className="inline-flex items-center gap-2 rounded-full border border-amber-900/30 bg-amber-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-900">
-              <Compass className="h-4 w-4" />
-              Isla 2 desbloqueada
-            </p>
-            <h2 className="mt-4 text-4xl font-black uppercase tracking-wide">Próxima misión en construcción</h2>
-            <p className="mt-3 text-sm font-semibold text-blue-900/80 md:text-base">
-              Ya has completado la Isla 1 y abierto la ruta hacia la Isla 2. El siguiente minijuego se
-              implementará sobre esta base.
-            </p>
-            <button
-              type="button"
-              onClick={backToMenu}
-              className="mt-6 inline-flex items-center justify-center rounded-xl border-2 border-blue-900 bg-blue-950 px-5 py-3 text-sm font-bold uppercase tracking-wide text-amber-100 transition hover:-translate-y-0.5 hover:bg-blue-900"
-            >
-              Volver al menú
-            </button>
-          </motion.section>
+            <Isla2Water7
+              onBackToMenu={backToMenu}
+              onIslandCompleted={() => {
+                setUnlockedIslands((prev) => ({ ...prev, isla3: true }));
+                setCurrentScreen("isla3");
+              }}
+              playError={playError}
+              playSuccess={playSuccess}
+            />
+          </motion.div>
+        )}
+
+        {currentScreen === "isla3" && (
+          <Isla3EniesLobby
+            onBackToMenu={backToMenu}
+            onIslandCompleted={() => {
+              setUnlockedIslands((prev) => ({ ...prev, isla4: true }));
+              setCurrentScreen("isla4");
+            }}
+            playClick={playClick}
+          />
+        )}
+
+        {currentScreen === "isla4" && (
+          <Isla4Sabaody
+            onBackToMenu={backToMenu}
+            onIslandCompleted={() => {
+              setUnlockedIslands((prev) => ({ ...prev, isla5: true }));
+              setCurrentScreen("isla5");
+            }}
+            playClick={playClick}
+          />
+        )}
+
+        {currentScreen === "isla5" && (
+          <Isla5ImpelDown
+            onBackToMenu={backToMenu}
+            onIslandCompleted={() => {
+              setUnlockedIslands((prev) => ({ ...prev, isla6: true }));
+              setCurrentScreen("isla6");
+            }}
+            playClick={playClick}
+          />
+        )}
+
+        {currentScreen === "isla6" && (
+          <Isla6LaughTale
+            onBackToMenu={backToMenu}
+            onIslandCompleted={backToMenu}
+            playClick={playClick}
+          />
         )}
       </main>
     </div>
