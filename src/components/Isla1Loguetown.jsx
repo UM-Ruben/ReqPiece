@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { motion, Reorder } from "framer-motion";
 import { AlertTriangle, ArrowDown, CheckCircle2, Compass, GripVertical, Heart, Map } from "lucide-react";
-import imageFail from "../image/isla1FalloBarcoChoca.png";
-import imageSuccess from "../image/isla1CorrectoBarcoOk.png";
+import imageFail from "../image/isla1Fallo.png";
+import imageSuccess from "../image/isla1Acierto.png";
 
 const CORRECT_ORDER = ["Obtencion", "Analisis", "Especificacion", "Validacion"];
 const DISPLAY_LABELS = {
