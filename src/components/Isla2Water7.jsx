@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Cpu, User } from "lucide-react";
+import { Cpu, Heart, User } from "lucide-react";
+import imageFail from "../image/isla2Fallo.png";
+import imageSuccess from "../image/isla2Acierto.png";
 
 const dialogos = [
   {
@@ -50,14 +52,12 @@ function shuffleOptions(options) {
   return copied;
 }
 
-export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playError, playSuccess }) {
-  const TURN_TIME = 30;
-  const TARGET_STREAK = 3;
+const MAX_LIVES = 3;
 
+export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playError, playSuccess }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [seconds, setSeconds] = useState(TURN_TIME);
-  const [gameOver, setGameOver] = useState(false);
+  const [lives, setLives] = useState(MAX_LIVES);
+  const [outcome, setOutcome] = useState(null);
   const [victory, setVictory] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [feedback, setFeedback] = useState({
@@ -69,71 +69,61 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playError
   );
 
   const lockRef = useRef(false);
+  const livesRef = useRef(MAX_LIVES);
 
-  useEffect(() => {
-    if (victory || gameOver) return;
-
-    const timer = setInterval(() => {
-      setSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setGameOver(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [victory, gameOver]);
+  const loseLife = () => {
+    const newLives = livesRef.current - 1;
+    livesRef.current = newLives;
+    setLives(newLives);
+    return newLives;
+  };
 
   const handleOption = (option) => {
-    if (gameOver || victory || lockRef.current) return;
+    if (victory || outcome === "failure" || lockRef.current) return;
 
     lockRef.current = true;
     setIsLocked(true);
 
     if (option.correcta) {
       playSuccess();
-      const nextStreak = streak + 1;
-      setStreak(nextStreak);
-      setFeedback({
-        type: "success",
-        message: `¡Correcto! Racha actual: ${nextStreak}/${TARGET_STREAK}.`,
-      });
-
-      if (nextStreak >= TARGET_STREAK) {
+      const nextIndex = currentIndex + 1;
+      if (nextIndex >= dialogos.length) {
         setVictory(true);
         lockRef.current = false;
         setIsLocked(false);
         return;
       }
-
-      const nextIndex = (currentIndex + 1) % dialogos.length;
+      setFeedback({
+        type: "success",
+        message: `¡Correcto! Pregunta ${nextIndex + 1}/${dialogos.length}.`,
+      });
       setCurrentIndex(nextIndex);
       setDisplayedOptions(shuffleOptions(dialogos[nextIndex].opciones));
     } else {
       playError();
-      setStreak(0);
+      const newLives = loseLife();
+
+      if (newLives <= 0) {
+        setOutcome("failure");
+        return;
+      }
+
       setFeedback({
         type: "error",
-        message: "Has fallado. Tienes otra oportunidad con las opciones en otra posición.",
+        message: `¡Respuesta incorrecta! Te quedan ${newLives} vidas. Inténtalo de nuevo.`,
       });
-      // Repite el mismo dialogo con opciones mezcladas para reintento.
       setDisplayedOptions(shuffleOptions(dialogos[currentIndex].opciones));
     }
 
-    // Se reinicia el contador tras cada respuesta.
-    setSeconds(TURN_TIME);
     lockRef.current = false;
     setIsLocked(false);
   };
 
   const reset = () => {
+    livesRef.current = MAX_LIVES;
     setCurrentIndex(0);
-    setStreak(0);
-    setSeconds(TURN_TIME);
-    setGameOver(false);
+    setLives(MAX_LIVES);
+    setOutcome(null);
     setVictory(false);
     setFeedback({ type: "info", message: "Selecciona la mejor traducción." });
     setDisplayedOptions(shuffleOptions(dialogos[0].opciones));
@@ -143,10 +133,13 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playError
 
   return (
     <section className="relative mx-auto max-w-3xl rounded-3xl bg-stone-900 p-6 text-amber-50">
-      <div className="flex justify-center">
-        <span className={`text-2xl font-bold ${seconds < 10 ? "text-red-500" : "text-amber-300"}`}>
-          {seconds}s
-        </span>
+      <div className="flex items-center justify-center gap-1">
+        {Array.from({ length: MAX_LIVES }).map((_, index) => (
+          <Heart
+            key={`life-${index + 1}`}
+            className={`h-5 w-5 ${index < lives ? "fill-red-500 text-red-600" : "text-slate-500"}`}
+          />
+        ))}
       </div>
 
       <div className="mt-4 grid grid-cols-2 items-center">
@@ -188,7 +181,7 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playError
           <button
             key={`${option.texto}-${idx}`}
             onClick={() => handleOption(option)}
-            disabled={gameOver || victory || isLocked}
+            disabled={victory || outcome === "failure" || isLocked}
             className="w-full rounded-xl bg-amber-100 px-4 py-3 font-bold text-blue-950 hover:bg-amber-200 disabled:opacity-50"
           >
             {option.texto}
@@ -196,30 +189,68 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playError
         ))}
       </div>
 
-      {gameOver && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 p-6 text-center">
-          <p className="mb-4 text-2xl font-black text-red-400">¡Se acabó el tiempo!</p>
-          <button onClick={reset} className="rounded-xl bg-yellow-500 px-6 py-3 font-bold uppercase">
-            Reintentar
-          </button>
-        </div>
+      {outcome === "failure" && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 z-30 flex items-center justify-center bg-blue-950/75 p-4"
+        >
+          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border-4 border-red-400/90 bg-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
+            <img src={imageFail} alt="Derrota en Water 7" className="w-full max-h-[60vh] object-contain" />
+            <div className="space-y-4 p-5">
+              <h3 className="text-2xl font-black uppercase tracking-wide text-red-300">Derrota en Water 7</h3>
+              <p className="font-semibold text-amber-100/90">
+                Te has quedado sin vidas. Reorganiza la estrategia y vuelve a intentarlo.
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  onClick={reset}
+                  className="rounded-xl border-2 border-amber-400 bg-amber-400 px-5 py-2.5 text-sm font-black uppercase tracking-wide text-blue-950 transition hover:brightness-105"
+                >
+                  Reintentar Isla 2
+                </button>
+                <button
+                  onClick={onBackToMenu}
+                  className="rounded-xl border-2 border-amber-200/50 bg-transparent px-5 py-2.5 text-sm font-black uppercase tracking-wide text-amber-100 transition hover:bg-amber-100/10"
+                >
+                  Volver al menú
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       )}
 
       {victory && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 p-6 text-center">
-          <p className="mb-4 text-2xl font-black text-green-400">
-            ¡Has traducido todo! Rumbo a la Isla 3...
-          </p>
-          <button
-            onClick={onIslandCompleted}
-            className="mb-3 rounded-xl bg-yellow-500 px-6 py-3 font-bold uppercase"
-          >
-            Ir a Isla 3
-          </button>
-          <button onClick={onBackToMenu} className="text-sm text-amber-200 underline">
-            Volver al menú
-          </button>
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 z-30 flex items-center justify-center bg-blue-950/75 p-4"
+        >
+          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border-4 border-emerald-400/90 bg-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
+            <img src={imageSuccess} alt="Victoria en Water 7" className="w-full max-h-[60vh] object-contain" />
+            <div className="space-y-3 p-5">
+              <h3 className="text-2xl font-black uppercase tracking-wide text-emerald-300">¡Isla 2 completada!</h3>
+              <p className="font-semibold text-amber-100/90">
+                ¡Has traducido todo! Has desbloqueado la Isla 3.
+              </p>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  onClick={onIslandCompleted}
+                  className="rounded-xl border-2 border-amber-400 bg-amber-400 px-5 py-2.5 text-sm font-black uppercase tracking-wide text-blue-950 transition hover:brightness-105"
+                >
+                  Continuar
+                </button>
+                <button
+                  onClick={onBackToMenu}
+                  className="rounded-xl border-2 border-amber-200/50 bg-transparent px-5 py-2.5 text-sm font-black uppercase tracking-wide text-amber-100 transition hover:bg-amber-100/10"
+                >
+                  Volver al menú
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       )}
     </section>
   );
