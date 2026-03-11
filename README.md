@@ -67,7 +67,7 @@ npm run preview      # sirve la build localmente
 - `Isla 5` desbloquea `Isla 6`
 - `Isla 6` desbloquea `Isla 7`
 
-### Isla 1 — Loguetown
+### Isla 1 — Loguetown: *Ordena los mapas*
 
 Arrastra las tarjetas para ordenar las **4 fases del ciclo de vida de requisitos**:`Obtención → Análisis → Especificación → Validación`
 
@@ -77,7 +77,7 @@ Arrastra las tarjetas para ordenar las **4 fases del ciclo de vida de requisitos
 - Al ordenarlas correctamente se muestra `isla1Acierto.png` y se desbloquea la Isla 2.
 - Al ganar, aparece el botón **Siguiente isla**.
 
-### Isla 2 — Water 7
+### Isla 2 — Water 7: *Traduce el diálogo*
 
 Se muestran frases de un cliente o programador y debes elegir la **traducción técnica correcta** entre 3 opciones.
 
@@ -88,7 +88,7 @@ Se muestran frases de un cliente o programador y debes elegir la **traducción t
 - Al superar las 3 preguntas se muestra `isla2Acierto.png` y se desbloquea la Isla 3.
 - Al ganar, aparece el botón **Siguiente isla**.
 
-### Isla 3 — Archipielago Sabaody
+### Isla 3 — Archipielago Sabaody: *Shooter QUE vs COMO*
 
 - Destruye barriles de **solución** y deja caer barriles de **problema**.
 - Puntaje y temporizador de 60s.
@@ -96,7 +96,7 @@ Se muestran frases de un cliente o programador y debes elegir la **traducción t
 - Al terminar, muestra imagen de acierto (`isla3Acierto.png`) o fallo (`isla3Fallo.png`).
 - Al ganar, aparece el botón **Siguiente isla**.
 
-### Isla 4 — Whole Cake
+### Isla 4 — Whole Cake: *Swipe Funcional vs No Funcional*
 
 - Arrastra cada tarjeta al caldero izquierdo (**Funcional**) o derecho (**No Funcional**).
 - Soporte de drag con ratón y táctil.
@@ -106,7 +106,7 @@ Se muestran frases de un cliente o programador y debes elegir la **traducción t
 - Muestra `isla4BigMomAcierto.png` o `isla4BigMomFallo.png` según resultado.
 - Al ganar, aparece el botón **Siguiente isla**.
 
-### Isla 5 — Wano
+### Isla 5 — Wano (Onigashima): *El corte de la precision (IEEE 830)*
 
 - Objetivo educativo: validar requisitos según IEEE 830 (no ambiguos, verificables y consistentes).
 - Mecánica de "Haki de Observación": inspecciona un pergamino y encuentra términos ambiguos.
