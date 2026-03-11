@@ -37,7 +37,6 @@ function getShuffledOrder() {
 }
 
 export default function Isla1Loguetown({
-  onBackToMenu,
   onIslandCompleted,
   playClick,
   playError,
@@ -122,16 +121,6 @@ export default function Isla1Loguetown({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            playClick();
-            onBackToMenu();
-          }}
-          className="shrink-0 inline-flex items-center justify-center rounded-xl border-2 border-blue-900 bg-blue-950 px-4 py-2 text-sm font-bold uppercase tracking-wide text-amber-100 transition hover:-translate-y-0.5 hover:bg-blue-900"
-        >
-          Volver al menú
-        </button>
       </div>
 
       <div className="mb-4 flex items-center justify-center gap-2 rounded-xl border-2 border-amber-300/80 bg-amber-100 px-4 py-2 text-blue-950">
@@ -155,7 +144,7 @@ export default function Isla1Loguetown({
             axis="y"
             values={cards}
             onReorder={setCards}
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-3 px-5 overflow-hidden"
           >
             {cards.map((phase, index) => (
               <Reorder.Item
@@ -270,16 +259,6 @@ export default function Isla1Loguetown({
                   >
                     Reintentar Isla 1
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playClick();
-                      onBackToMenu();
-                    }}
-                    className="rounded-xl border-2 border-amber-200/50 bg-transparent px-5 py-2.5 text-sm font-black uppercase tracking-wide text-amber-100 transition hover:bg-amber-100/10"
-                  >
-                    Volver al menú
-                  </button>
                 </div>
               </div>
             </div>
@@ -297,7 +276,7 @@ export default function Isla1Loguetown({
               <div className="space-y-3 p-5">
                 <h3 className="text-2xl font-black uppercase tracking-wide text-emerald-300">¡Isla 1 completada!</h3>
                 <p className="font-semibold text-amber-100/90">
-                  Has desbloqueado la Isla 2. Pulsa para volver al menú principal.
+                  Has desbloqueado la Isla 2. Pulsa para ir al inicio y elegir la siguiente isla.
                 </p>
                 <div className="mt-4 flex justify-end">
                   <button
@@ -308,7 +287,7 @@ export default function Isla1Loguetown({
                     }}
                     className="rounded-xl border-2 border-amber-400 bg-amber-400 px-5 py-2.5 text-sm font-black uppercase tracking-wide text-blue-950 transition hover:brightness-105"
                   >
-                    Continuar
+                    Siguiente isla
                   </button>
                 </div>
               </div>
