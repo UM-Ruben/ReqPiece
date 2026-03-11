@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Anchor, Compass, Lock, Skull, Unlock } from "lucide-react";
 import Isla1Loguetown from "./components/Isla1Loguetown";
 import Isla2Water7 from "./components/Isla2Water7";
-import Isla3EniesLobby from "./components/Isla3EniesLobby";
-import Isla4Sabaody from "./components/Isla4Sabaody";
-import Isla5ImpelDown from "./components/Isla5ImpelDown";
+import Isla3Sabaody from "./components/Isla3Sabaody";
+import Isla4Sabaody from "./components/Isla4BigMom";
+import Isla5Wano from "./components/Isla5Wano";
 import Isla6LaughTale from "./components/Isla6LaughTale";
 import { usePirateAudio } from "./hooks/usePirateAudio";
 
@@ -20,10 +20,12 @@ export default function App() {
     isla6: false,
   });
   const { playClick, playError, playSuccess } = usePirateAudio();
+  const islandKeys = ["isla1", "isla2", "isla3", "isla4", "isla5", "isla6"];
 
-  const goToIsla1 = () => {
+  const goToIsland = (islandKey) => {
     playClick();
-    setCurrentScreen("isla1");
+    if (!unlockedIslands[islandKey]) return;
+    setCurrentScreen(islandKey);
   };
 
   const backToMenu = () => {
@@ -36,15 +38,106 @@ export default function App() {
       ...prev,
       isla2: true,
     }));
-    // en lugar de volver al menú, entramos de inmediato en la isla 2
-    setCurrentScreen("isla2");
+    setCurrentScreen("menu");
   };
 
-  const goToIsla2 = () => {
-    playClick();
-    if (!unlockedIslands.isla2) return;
-    setCurrentScreen("isla2");
-  };
+  const islandsMenu = [
+    {
+      key: "isla1",
+      nombre: "Loguetown",
+      descripcion: "Ordena fases del ciclo de requisitos para iniciar la travesia.",
+      lockedHint: "",
+    },
+    {
+      key: "isla2",
+      nombre: "Water 7",
+      descripcion: "Traduce dialogos cliente-programador al lenguaje tecnico.",
+      lockedHint: "Completa Isla 1 para desbloquear.",
+    },
+    {
+      key: "isla3",
+      nombre: "Archipielago Sabaody",
+      descripcion: "Shooter: distingue requisito (QUE) de solucion (COMO).",
+      lockedHint: "Completa Isla 2 para desbloquear.",
+    },
+    {
+      key: "isla4",
+      nombre: "Whole Cake",
+      descripcion: "Swipe: clasifica requisitos funcionales y no funcionales.",
+      lockedHint: "Completa Isla 3 para desbloquear.",
+    },
+    {
+      key: "isla5",
+      nombre: "Wano",
+      descripcion: "Valida requisitos con precision IEEE 830 en Onigashima.",
+      lockedHint: "Completa Isla 4 para desbloquear.",
+    },
+    {
+      key: "isla6",
+      nombre: "Laugh Tale",
+      descripcion: "Tramo final para encontrar el One Spec.",
+      lockedHint: "Completa Isla 5 para desbloquear.",
+    },
+  ];
+
+  const unlockedCount = Object.values(unlockedIslands).filter(Boolean).length;
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return undefined;
+    }
+
+    const previousReqPiece = window.reqpiece;
+
+    const resolveIsland = (islandNumber) => {
+      const parsed = Number(islandNumber);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 6) {
+        // eslint-disable-next-line no-console
+        console.error("Uso: reqpiece.resolveIsland(<1-6>)");
+        return false;
+      }
+
+      const unlockUntil = Math.min(6, parsed + 1);
+      setUnlockedIslands(() => {
+        const next = {
+          isla1: false,
+          isla2: false,
+          isla3: false,
+          isla4: false,
+          isla5: false,
+          isla6: false,
+        };
+
+        islandKeys.slice(0, unlockUntil).forEach((key) => {
+          next[key] = true;
+        });
+
+        return next;
+      });
+      setCurrentScreen("menu");
+
+      // eslint-disable-next-line no-console
+      console.info(`Isla ${parsed} resuelta. Progreso actualizado y menu abierto.`);
+      return true;
+    };
+
+    window.reqpiece = {
+      ...(previousReqPiece || {}),
+      resolveIsland,
+      help: "Comando: reqpiece.resolveIsland(1..6)",
+    };
+
+    // eslint-disable-next-line no-console
+    console.info("ReqPiece console command ready: reqpiece.resolveIsland(1..6)");
+
+    return () => {
+      if (previousReqPiece === undefined) {
+        delete window.reqpiece;
+      } else {
+        window.reqpiece = previousReqPiece;
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-blue-950 via-sky-900 to-blue-800 text-amber-50">
@@ -81,7 +174,7 @@ export default function App() {
             </p>
 
             <h2 className="mt-4 text-3xl font-black uppercase tracking-wide md:text-4xl">
-              Elige tu primera travesia
+              Elige tu isla
             </h2>
 
             <p className="mt-3 max-w-2xl text-sm font-semibold text-blue-900/80 md:text-base">
@@ -89,63 +182,49 @@ export default function App() {
             </p>
 
             <div className="mt-8 grid gap-4 md:grid-cols-2">
-              <article className="rounded-2xl border-2 border-amber-700 bg-gradient-to-r from-blue-950 to-blue-900 p-5 text-amber-50 shadow-[0_10px_20px_rgba(0,0,0,0.25)]">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">
-                  Isla disponible
-                </p>
-                <h3 className="mt-2 text-2xl font-black">Loguetown</h3>
-                <p className="mt-2 text-sm font-medium text-amber-100/85">
-                  Ordena los mapas de fases para trazar una ruta solida antes de lanzar el proyecto.
-                </p>
-                <button
-                  type="button"
-                  onClick={goToIsla1}
-                  className="mt-5 inline-flex items-center gap-2 rounded-xl border-2 border-amber-400 bg-gradient-to-r from-yellow-400 to-amber-500 px-5 py-3 text-base font-black uppercase tracking-[0.12em] text-blue-950 transition hover:-translate-y-0.5 hover:brightness-105"
-                >
-                  <Compass className="h-5 w-5" />
-                  Ir a Isla 1
-                </button>
-              </article>
-
-              <article
-                className={`rounded-2xl border-2 p-5 shadow-[0_10px_20px_rgba(0,0,0,0.15)] ${
-                  unlockedIslands.isla2
-                    ? "border-amber-700 bg-gradient-to-r from-blue-950 to-blue-900 text-amber-50"
-                    : "border-amber-700/40 bg-amber-50/70 text-blue-950"
-                }`}
-              >
-                <p
-                  className={`inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] ${
-                    unlockedIslands.isla2 ? "text-amber-300" : "text-blue-800/80"
-                  }`}
-                >
-                  {unlockedIslands.isla2 ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-                  {unlockedIslands.isla2 ? "Desbloqueada" : "Bloqueada"}
-                </p>
-                <h3 className="mt-2 text-2xl font-black">Isla 2</h3>
-                <p className={`mt-2 text-sm font-semibold ${unlockedIslands.isla2 ? "text-amber-100/85" : "text-blue-900/70"}`}>
-                  {unlockedIslands.isla2
-                    ? "La nueva travesía está lista para desarrollarse."
-                    : "Completa la Isla 1 para desbloquear esta misión."}
-                </p>
-                <button
-                  type="button"
-                  onClick={goToIsla2}
-                  disabled={!unlockedIslands.isla2}
-                  className={`mt-5 inline-flex items-center gap-2 rounded-xl border-2 px-5 py-3 text-base font-black uppercase tracking-[0.12em] transition ${
-                    unlockedIslands.isla2
-                      ? "border-amber-400 bg-gradient-to-r from-yellow-400 to-amber-500 text-blue-950 hover:-translate-y-0.5 hover:brightness-105"
-                      : "cursor-not-allowed border-slate-300/70 bg-slate-300/60 text-slate-600"
-                  }`}
-                >
-                  <Compass className="h-5 w-5" />
-                  {unlockedIslands.isla2 ? "Ir a Isla 2" : "Isla 2 bloqueada"}
-                </button>
-              </article>
+              {islandsMenu.map((island, index) => {
+                const unlocked = unlockedIslands[island.key];
+                return (
+                  <article
+                    key={island.key}
+                    className={`rounded-2xl border-2 p-5 shadow-[0_10px_20px_rgba(0,0,0,0.15)] ${
+                      unlocked
+                        ? "border-amber-700 bg-gradient-to-r from-blue-950 to-blue-900 text-amber-50"
+                        : "border-amber-700/40 bg-amber-50/70 text-blue-950"
+                    }`}
+                  >
+                    <p
+                      className={`inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] ${
+                        unlocked ? "text-amber-300" : "text-blue-800/80"
+                      }`}
+                    >
+                      {unlocked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                      {unlocked ? "Desbloqueada" : "Bloqueada"}
+                    </p>
+                    <h3 className="mt-2 text-2xl font-black">Isla {index + 1}: {island.nombre}</h3>
+                    <p className={`mt-2 text-sm font-semibold ${unlocked ? "text-amber-100/85" : "text-blue-900/70"}`}>
+                      {unlocked ? island.descripcion : island.lockedHint}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => goToIsland(island.key)}
+                      disabled={!unlocked}
+                      className={`mt-5 inline-flex items-center gap-2 rounded-xl border-2 px-5 py-3 text-base font-black uppercase tracking-[0.12em] transition ${
+                        unlocked
+                          ? "border-amber-400 bg-gradient-to-r from-yellow-400 to-amber-500 text-blue-950 hover:-translate-y-0.5 hover:brightness-105"
+                          : "cursor-not-allowed border-slate-300/70 bg-slate-300/60 text-slate-600"
+                      }`}
+                    >
+                      <Compass className="h-5 w-5" />
+                      {unlocked ? `Ir a Isla ${index + 1}` : `Isla ${index + 1} bloqueada`}
+                    </button>
+                  </article>
+                );
+              })}
             </div>
 
             <p className="mt-5 text-xs font-bold uppercase tracking-[0.17em] text-blue-900/70">
-              Progreso actual: {unlockedIslands.isla2 ? "2/6 islas desbloqueadas" : "1/6 islas desbloqueadas"}
+              Progreso actual: {unlockedCount}/6 islas desbloqueadas
             </p>
           </motion.section>
         )}
@@ -176,7 +255,7 @@ export default function App() {
               onBackToMenu={backToMenu}
               onIslandCompleted={() => {
                 setUnlockedIslands((prev) => ({ ...prev, isla3: true }));
-                setCurrentScreen("isla3");
+                setCurrentScreen("menu");
               }}
               playError={playError}
               playSuccess={playSuccess}
@@ -185,11 +264,11 @@ export default function App() {
         )}
 
         {currentScreen === "isla3" && (
-          <Isla3EniesLobby
+          <Isla3Sabaody
             onBackToMenu={backToMenu}
             onIslandCompleted={() => {
               setUnlockedIslands((prev) => ({ ...prev, isla4: true }));
-              setCurrentScreen("isla4");
+              setCurrentScreen("menu");
             }}
             playClick={playClick}
           />
@@ -200,18 +279,18 @@ export default function App() {
             onBackToMenu={backToMenu}
             onIslandCompleted={() => {
               setUnlockedIslands((prev) => ({ ...prev, isla5: true }));
-              setCurrentScreen("isla5");
+              setCurrentScreen("menu");
             }}
             playClick={playClick}
           />
         )}
 
         {currentScreen === "isla5" && (
-          <Isla5ImpelDown
+          <Isla5Wano
             onBackToMenu={backToMenu}
             onIslandCompleted={() => {
               setUnlockedIslands((prev) => ({ ...prev, isla6: true }));
-              setCurrentScreen("isla6");
+              setCurrentScreen("menu");
             }}
             playClick={playClick}
           />
