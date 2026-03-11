@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-export default function Isla6LaughTale({ onBackToMenu, onIslandCompleted, playClick }) {
+export default function Isla6LaughTale({ onIslandCompleted, playClick }) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 16 }}
@@ -19,17 +19,7 @@ export default function Isla6LaughTale({ onBackToMenu, onIslandCompleted, playCl
           }}
           className="rounded-xl border-2 border-amber-400 bg-gradient-to-r from-yellow-400 to-amber-500 px-5 py-3 text-sm font-black uppercase tracking-wide text-blue-950"
         >
-          Volver al menu
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            playClick();
-            onBackToMenu();
-          }}
-          className="rounded-xl border-2 border-blue-900 bg-blue-950 px-5 py-3 text-sm font-bold uppercase tracking-wide text-amber-100"
-        >
-          Salir
+          Siguiente isla
         </button>
       </div>
     </motion.section>
