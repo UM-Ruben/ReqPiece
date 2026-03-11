@@ -6,7 +6,8 @@ import Isla2Water7 from "./components/Isla2Water7";
 import Isla3Sabaody from "./components/Isla3Sabaody";
 import Isla4Sabaody from "./components/Isla4BigMom";
 import Isla5Wano from "./components/Isla5Wano";
-import Isla6LaughTale from "./components/Isla6LaughTale";
+import Isla6EggHead from "./components/Isla6EggHead";
+import Isla7LaughTale from "./components/Isla7LaughTale";
 import { usePirateAudio } from "./hooks/usePirateAudio";
 
 export default function App() {
@@ -18,9 +19,10 @@ export default function App() {
     isla4: false,
     isla5: false,
     isla6: false,
+    isla7: false,
   });
   const { playClick, playError, playSuccess } = usePirateAudio();
-  const islandKeys = ["isla1", "isla2", "isla3", "isla4", "isla5", "isla6"];
+  const islandKeys = ["isla1", "isla2", "isla3", "isla4", "isla5", "isla6", "isla7"];
 
   const goToIsland = (islandKey) => {
     playClick();
@@ -74,9 +76,15 @@ export default function App() {
     },
     {
       key: "isla6",
-      nombre: "Laugh Tale",
-      descripcion: "Tramo final para encontrar el One Spec.",
+      nombre: "EggHead",
+      descripcion: "Laboratorio del futuro: trazabilidad cuantica e impacto automatizado.",
       lockedHint: "Completa Isla 5 para desbloquear.",
+    },
+    {
+      key: "isla7",
+      nombre: "Laugh Tale",
+      descripcion: "Recta final para encontrar el One Spec.",
+      lockedHint: "Completa Isla 6 para desbloquear.",
     },
   ];
 
@@ -93,7 +101,7 @@ export default function App() {
       const parsed = Number(islandNumber);
       if (!Number.isInteger(parsed) || parsed < 1 || parsed > 6) {
         // eslint-disable-next-line no-console
-        console.error("Uso: reqpiece.resolveIsland(<1-6>)");
+        console.error("Uso: reqpiece.resolveIsland(<1-7>)");
         return false;
       }
 
@@ -105,8 +113,7 @@ export default function App() {
           isla3: false,
           isla4: false,
           isla5: false,
-          isla6: false,
-        };
+          isla6: false,          isla7: false,        };
 
         islandKeys.slice(0, unlockUntil).forEach((key) => {
           next[key] = true;
@@ -124,11 +131,11 @@ export default function App() {
     window.reqpiece = {
       ...(previousReqPiece || {}),
       resolveIsland,
-      help: "Comando: reqpiece.resolveIsland(1..6)",
+      help: "Comando: reqpiece.resolveIsland(1..7)",
     };
 
     // eslint-disable-next-line no-console
-    console.info("ReqPiece console command ready: reqpiece.resolveIsland(1..6)");
+    console.info("ReqPiece console command ready: reqpiece.resolveIsland(1..7)");
 
     return () => {
       if (previousReqPiece === undefined) {
@@ -178,7 +185,7 @@ export default function App() {
             </h2>
 
             <p className="mt-3 max-w-2xl text-sm font-semibold text-blue-900/80 md:text-base">
-              El Rey de los Analistas, Gold Roger, antes de retirarse dejó el mayor tesoro de la Ingeniería de Software escondido en la última isla del Grand Line: El "One Spec" (El Documento de Especificación de Requisitos Perfecto).<br/>Tú eres un joven capitán pirata que aspira a ser el Rey de los Analistas. Para lograrlo, debes construir el barco definitivo (el sistema de software) y reclutar a una tripulación. Deberás navegar por 6 islas diferentes. En cada isla te enfrentarás a un minijuego que pondrá a prueba tus conocimientos teóricos de GPDS (Ingeniería de Requisitos).
+              El Rey de los Analistas, Gold Roger, antes de retirarse dejó el mayor tesoro de la Ingeniería de Software escondido en la última isla del Grand Line: El "One Spec" (El Documento de Especificación de Requisitos Perfecto).<br/>Tú eres un joven capitán pirata que aspira a ser el Rey de los Analistas. Para lograrlo, debes construir el barco definitivo (el sistema de software) y reclutar a una tripulación. Deberás navegar por 7 islas diferentes. En cada isla te enfrentarás a un minijuego que pondrá a prueba tus conocimientos teóricos de GPDS (Ingeniería de Requisitos).
             </p>
 
             <div className="mt-8 grid gap-4 md:grid-cols-2">
@@ -224,7 +231,7 @@ export default function App() {
             </div>
 
             <p className="mt-5 text-xs font-bold uppercase tracking-[0.17em] text-blue-900/70">
-              Progreso actual: {unlockedCount}/6 islas desbloqueadas
+              Progreso actual: {unlockedCount}/7 islas desbloqueadas
             </p>
           </motion.section>
         )}
@@ -297,11 +304,55 @@ export default function App() {
         )}
 
         {currentScreen === "isla6" && (
-          <Isla6LaughTale
+          <Isla6EggHead
             onBackToMenu={backToMenu}
-            onIslandCompleted={backToMenu}
+            onIslandCompleted={() => {
+              setUnlockedIslands((prev) => ({ ...prev, isla7: true }));
+              setCurrentScreen("menu");
+            }}
+            playClick={playClick}
+            playError={playError}
+            playSuccess={playSuccess}
+          />
+        )}
+
+        {currentScreen === "isla7" && (
+          <Isla7LaughTale
+            onBackToMenu={backToMenu}
+            onIslandCompleted={() => {
+              setCurrentScreen("victory");
+            }}
             playClick={playClick}
           />
+        )}
+
+        {currentScreen === "victory" && (
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="mx-auto w-full max-w-4xl rounded-3xl border-4 border-amber-700/70 bg-gradient-to-br from-yellow-100 via-amber-100 to-orange-100 p-8 text-blue-950 shadow-[0_18px_40px_rgba(0,0,0,0.35)]"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-900">Tesoro encontrado</p>
+            <h2 className="mt-2 text-4xl font-black uppercase">¡Has reclamado el One Spec!</h2>
+            <p className="mt-4 text-base font-semibold text-blue-900/85">
+              Superaste las 7 islas del Grand Line y dominaste la Ingenieria de Requisitos.
+              Tu tripulacion ya canta tu nombre como el nuevo Rey de los Analistas.
+            </p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  playClick();
+                  setCurrentScreen("menu");
+                }}
+                className="rounded-xl border-2 border-amber-400 bg-gradient-to-r from-yellow-400 to-amber-500 px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-blue-950 transition hover:-translate-y-0.5"
+              >
+                Volver al menu
+              </button>
+            </div>
+          </motion.section>
         )}
       </main>
     </div>

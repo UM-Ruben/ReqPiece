@@ -37,6 +37,7 @@ function getShuffledOrder() {
 }
 
 export default function Isla1Loguetown({
+  onBackToMenu,
   onIslandCompleted,
   playClick,
   playError,
@@ -121,6 +122,13 @@ export default function Isla1Loguetown({
           </p>
         </div>
 
+        <button
+          type="button"
+          onClick={onBackToMenu}
+          className="rounded-lg border border-amber-500/60 bg-amber-200/20 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-blue-950 transition hover:bg-amber-200/40"
+        >
+          Volver al menú
+        </button>
       </div>
 
       <div className="mb-4 flex items-center justify-center gap-2 rounded-xl border-2 border-amber-300/80 bg-amber-100 px-4 py-2 text-blue-950">
