@@ -20,7 +20,8 @@ src/
     Isla3Sabaody.jsx        # minijuego activo
     Isla4BigMom.jsx         # minijuego activo
     Isla5Wano.jsx           # minijuego activo
-    Isla6LaughTale.jsx      # pantalla final
+    Isla6EggHead.jsx        # minijuego activo
+    Isla7LaughTale.jsx      # pantalla final
   hooks/
     usePirateAudio.js       # efectos de sonido (click, error, éxito)
   image/
@@ -34,6 +35,8 @@ src/
     isla4BigMomFallo.png
     isla5KaidoAcierto.png
     isla5KaidoFallo.png
+    isla6VegapunkAcierto.png
+    isla6VegapunkFallo.png
 ```
 
 ## Instalación y ejecución
@@ -48,11 +51,12 @@ npm run preview      # sirve la build localmente
 ## Cómo jugar
 
 1. Desde el menú principal, selecciona una isla desbloqueada.
-2. Las 6 islas aparecen listadas con estado `Desbloqueada` o `Bloqueada`.
+2. Las 7 islas aparecen listadas con estado `Desbloqueada` o `Bloqueada`.
 3. El progreso es secuencial: cada isla desbloquea la siguiente al completarse.
 4. Al ganar una isla se muestra su imagen de acierto y el botón **Siguiente isla**.
 5. Al pulsar **Siguiente isla**, vuelves al inicio (menú) para elegir manualmente la siguiente isla ya desbloqueada.
 6. Si fallas una isla, se muestra su imagen de fallo y opción de reintentar.
+7. La Isla 7 actúa como cierre del recorrido y conduce a la pantalla final de victoria.
 
 ## Flujo de progresión
 
@@ -61,11 +65,11 @@ npm run preview      # sirve la build localmente
 - `Isla 3` desbloquea `Isla 4`
 - `Isla 4` desbloquea `Isla 5`
 - `Isla 5` desbloquea `Isla 6`
+- `Isla 6` desbloquea `Isla 7`
 
-### Isla 1 — Loguetown: *Ordena los mapas*
+### Isla 1 — Loguetown
 
-Arrastra las tarjetas para ordenar las **4 fases del ciclo de vida de requisitos**:  
-`Obtención → Análisis → Especificación → Validación`
+Arrastra las tarjetas para ordenar las **4 fases del ciclo de vida de requisitos**:`Obtención → Análisis → Especificación → Validación`
 
 - Pulsa **¡Zarpar!** para comprobar el orden.
 - Cada intento incorrecto resta 1 vida.
@@ -73,7 +77,7 @@ Arrastra las tarjetas para ordenar las **4 fases del ciclo de vida de requisitos
 - Al ordenarlas correctamente se muestra `isla1Acierto.png` y se desbloquea la Isla 2.
 - Al ganar, aparece el botón **Siguiente isla**.
 
-### Isla 2 — Water 7: *Traduce el diálogo*
+### Isla 2 — Water 7
 
 Se muestran frases de un cliente o programador y debes elegir la **traducción técnica correcta** entre 3 opciones.
 
@@ -84,7 +88,7 @@ Se muestran frases de un cliente o programador y debes elegir la **traducción t
 - Al superar las 3 preguntas se muestra `isla2Acierto.png` y se desbloquea la Isla 3.
 - Al ganar, aparece el botón **Siguiente isla**.
 
-### Isla 3 — Archipielago Sabaody: *Shooter QUE vs COMO*
+### Isla 3 — Archipielago Sabaody
 
 - Destruye barriles de **solución** y deja caer barriles de **problema**.
 - Puntaje y temporizador de 60s.
@@ -92,7 +96,7 @@ Se muestran frases de un cliente o programador y debes elegir la **traducción t
 - Al terminar, muestra imagen de acierto (`isla3Acierto.png`) o fallo (`isla3Fallo.png`).
 - Al ganar, aparece el botón **Siguiente isla**.
 
-### Isla 4 — Whole Cake: *Swipe Funcional vs No Funcional*
+### Isla 4 — Whole Cake
 
 - Arrastra cada tarjeta al caldero izquierdo (**Funcional**) o derecho (**No Funcional**).
 - Soporte de drag con ratón y táctil.
@@ -102,7 +106,7 @@ Se muestran frases de un cliente o programador y debes elegir la **traducción t
 - Muestra `isla4BigMomAcierto.png` o `isla4BigMomFallo.png` según resultado.
 - Al ganar, aparece el botón **Siguiente isla**.
 
-### Isla 5 — Wano (Onigashima): *El corte de la precision (IEEE 830)*
+### Isla 5 — Wano
 
 - Objetivo educativo: validar requisitos según IEEE 830 (no ambiguos, verificables y consistentes).
 - Mecánica de "Haki de Observación": inspecciona un pergamino y encuentra términos ambiguos.
@@ -112,6 +116,18 @@ Se muestran frases de un cliente o programador y debes elegir la **traducción t
 - Usa imágenes `isla5KaidoAcierto.png` y `isla5KaidoFallo.png`.
 - Al ganar, aparece el botón **Siguiente isla**.
 
-### Isla 6
+### Isla 6 — EggHead
 
-Actualmente en construcción.
+- Objetivo educativo: identificar qué artefactos del sistema se ven afectados por un cambio de requisito.
+- Mecánica principal: activa el `REQ-04` modificado y selecciona únicamente los artefactos impactados.
+- Hay **3 artefactos correctos** y un máximo de **3 strikes** antes del game over.
+- Los artefactos erróneos producen feedback visual con sacudida y resaltado rojo.
+- Al completar correctamente la trazabilidad se muestra `isla6VegapunkAcierto.png`.
+- Al agotar los intentos se muestra `isla6VegapunkFallo.png` con opción de reintentar o salir al menú.
+- Al ganar, aparece el botón **Siguiente isla**.
+
+### Isla 7 — Laugh Tale
+
+- Pantalla final previa a la victoria absoluta del juego.
+- Funciona como cierre narrativo de la travesía tras completar EggHead.
+- Desde aquí se accede a la pantalla final donde se reclama el **One Spec**.
