@@ -54,7 +54,7 @@ function shuffleOptions(options) {
 
 const MAX_LIVES = 3;
 
-export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playError, playSuccess }) {
+export default function Isla2Water7({ onIslandCompleted, playError, playSuccess }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lives, setLives] = useState(MAX_LIVES);
   const [outcome, setOutcome] = useState(null);
@@ -209,12 +209,6 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playError
                 >
                   Reintentar Isla 2
                 </button>
-                <button
-                  onClick={onBackToMenu}
-                  className="rounded-xl border-2 border-amber-200/50 bg-transparent px-5 py-2.5 text-sm font-black uppercase tracking-wide text-amber-100 transition hover:bg-amber-100/10"
-                >
-                  Volver al menú
-                </button>
               </div>
             </div>
           </div>
@@ -239,13 +233,7 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playError
                   onClick={onIslandCompleted}
                   className="rounded-xl border-2 border-amber-400 bg-amber-400 px-5 py-2.5 text-sm font-black uppercase tracking-wide text-blue-950 transition hover:brightness-105"
                 >
-                  Continuar
-                </button>
-                <button
-                  onClick={onBackToMenu}
-                  className="rounded-xl border-2 border-amber-200/50 bg-transparent px-5 py-2.5 text-sm font-black uppercase tracking-wide text-amber-100 transition hover:bg-amber-100/10"
-                >
-                  Volver al menú
+                  Siguiente isla
                 </button>
               </div>
             </div>
