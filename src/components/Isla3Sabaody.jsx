@@ -283,9 +283,14 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
+
+    // Map pointer from rendered CSS size to internal canvas coordinates.
+    const xInCanvas = ((clientX - rect.left) / rect.width) * canvas.width;
+    const yInCanvas = ((clientY - rect.top) / rect.height) * canvas.height;
+
     crosshairRef.current = {
-      x: Math.max(20, Math.min(canvas.width - 20, clientX - rect.left)),
-      y: Math.max(20, Math.min(canvas.height - 20, clientY - rect.top)),
+      x: Math.max(0, Math.min(canvas.width, xInCanvas)),
+      y: Math.max(0, Math.min(canvas.height, yInCanvas)),
     };
   }, []);
 
@@ -371,7 +376,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
           ref={canvasRef}
           width={900}
           height={560}
-          className="h-auto w-full touch-none"
+          className="h-auto w-full touch-none cursor-none"
           onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
           onClick={fireShot}
           onTouchMove={(e) => {
