@@ -10,7 +10,7 @@ const REQUIREMENTS = [
   {
     id: "r1",
     before: "El sistema de alerta debe responder de forma ",
-    palabra: "rapido",
+    palabra: "rapida",
     after: " cuando el capataz active una emergencia.",
     reemplazo: "en menos de 2 segundos",
     razon: "Es verificable midiendo tiempo de respuesta maximo.",
