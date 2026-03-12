@@ -46,7 +46,6 @@ src/
 
 ```bash
 npm install
-npm install prop-types
 npm run dev          # arranca el servidor de desarrollo
 npm run build        # genera la versión de producción
 npm run preview      # sirve la build localmente
@@ -61,7 +60,14 @@ npm run preview      # sirve la build localmente
 - **Vite** - Build tool
 - **prop-types** - Validación de props (necesario para IslandIntro.jsx)
 
-Si instalas el proyecto desde cero, todas las dependencias se instalarán automáticamente con `npm install`, exceptuando las de prop-types, por ello también has de ejecutar `npm install prop-types`.
+`prop-types` ya está declarado en `package.json`, así que `npm install` instala todo lo necesario.
+
+## Últimos cambios
+
+- Se añadió el botón **Volver al menú** en todas las islas que no lo tenían para un flujo de navegación consistente.
+- La **Isla 3** oculta el cursor nativo dentro del canvas y corrige la alineación del puntero visual del shooter.
+- La **Isla 6** fue rediseñada como una experiencia de trazabilidad inspirada en **IBM DOORS** y herramientas **CASE/CARE**.
+- La introducción de **EggHead** ahora incluye una explicación didáctica del objetivo educativo y de cómo interpretar el minijuego.
 
 ## Cómo jugar
 
@@ -70,10 +76,11 @@ Si instalas el proyecto desde cero, todas las dependencias se instalarán autom�
 3. Tras leer la introducción, pulsa el botón CTA (Call-To-Action) para iniciar el minijuego.
 4. Las 7 islas aparecen listadas con estado `Desbloqueada` o `Bloqueada`.
 5. El progreso es secuencial: cada isla desbloquea la siguiente al completarse.
-6. Al ganar una isla se muestra su imagen de acierto y el botón **Siguiente isla**.
-7. Al pulsar **Siguiente isla**, vuelves al inicio (menú) para elegir manualmente la siguiente isla ya desbloqueada.
-8. Si fallas una isla, se muestra su imagen de fallo y opción de reintentar.
-9. La Isla 7 actúa como cierre del recorrido y conduce a la pantalla final de victoria.
+6. Todas las islas incluyen un botón **Volver al menú** para salir sin perder el hilo de navegación.
+7. Al ganar una isla se muestra su imagen de acierto y el botón **Siguiente isla**.
+8. Al pulsar **Siguiente isla**, vuelves al inicio (menú) para elegir manualmente la siguiente isla ya desbloqueada.
+9. Si fallas una isla, se muestra su imagen de fallo y opción de reintentar.
+10. La Isla 7 actúa como cierre del recorrido y conduce a la pantalla final de victoria.
 
 ## Flujo de progresión
 
@@ -145,6 +152,7 @@ Se muestran frases de un cliente o programador y debes elegir la **traducción t
 
 - Destruye barriles de **solución** y deja caer barriles de **problema**.
 - Puntaje y temporizador de 60s.
+- El canvas oculta el cursor del sistema y utiliza un puntero de disparo propio alineado con la posición real del ratón.
 - Condición de victoria accesible: alcanzar el puntaje mínimo antes de terminar el tiempo.
 - Al terminar, muestra imagen de acierto (`isla3Acierto.png`) o fallo (`isla3Fallo.png`).
 - Al ganar, aparece el botón **Siguiente isla**.
@@ -171,11 +179,13 @@ Se muestran frases de un cliente o programador y debes elegir la **traducción t
 
 ### Isla 6 — EggHead
 
-- Objetivo educativo: identificar qué artefactos del sistema se ven afectados por un cambio de requisito.
-- Mecánica principal: activa el `REQ-04` modificado y selecciona únicamente los artefactos impactados.
-- Hay **3 artefactos correctos** y un máximo de **3 strikes** antes del game over.
-- Los artefactos erróneos producen feedback visual con sacudida y resaltado rojo.
-- Al completar correctamente la trazabilidad se muestra `isla6VegapunkAcierto.png`.
+- Objetivo educativo: practicar **trazabilidad** y **análisis de impacto** cuando cambia un requisito.
+- Mecánica principal: selecciona un requisito del baseline, lee su descripción y deduce qué artefactos del sistema deben enlazarse.
+- Inspiración directa: reproduce de forma gamificada la lógica de trabajo de herramientas como **IBM DOORS** y otras herramientas **CASE/CARE**.
+- Ya no se muestra la solución por adelantado: el jugador debe razonar las trazas a partir de la descripción del requisito y del artefacto.
+- Incluye una **matriz de trazabilidad** visual, panel de **expediente activo**, feedback contextual y sistema de **3 strikes**.
+- Los enlaces erróneos producen feedback visual con sacudida y resaltado rojo.
+- Al completar correctamente la matriz se muestra `isla6VegapunkAcierto.png`.
 - Al agotar los intentos se muestra `isla6VegapunkFallo.png` con opción de reintentar o salir al menú.
 - Al ganar, aparece el botón **Siguiente isla**.
 
@@ -204,6 +214,7 @@ El componente `IslandIntro.jsx` es una pantalla narrativa épica que aparece ant
   - 2 párrafos de descripción narrativa
   - Botón CTA personalizado por isla
   - Decoración inferior
+- **Caso especial en Isla 6**: añade una bitácora didáctica que explica el flujo del minijuego y su relación con DOORS/CASE.
 
 ### Props del componente:
 
