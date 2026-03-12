@@ -8,10 +8,12 @@ import Isla4Sabaody from "./components/Isla4BigMom";
 import Isla5Wano from "./components/Isla5Wano";
 import Isla6EggHead from "./components/Isla6EggHead";
 import Isla7LaughTale from "./components/Isla7LaughTale";
+import IslandIntro from "./components/IslandIntro";
 import { usePirateAudio } from "./hooks/usePirateAudio";
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState("menu");
+  const [showingIntro, setShowingIntro] = useState(false);
   const [unlockedIslands, setUnlockedIslands] = useState({
     isla1: true,
     isla2: false,
@@ -28,11 +30,17 @@ export default function App() {
     playClick();
     if (!unlockedIslands[islandKey]) return;
     setCurrentScreen(islandKey);
+    setShowingIntro(true);
+  };
+
+  const startIsland = () => {
+    setShowingIntro(false);
   };
 
   const backToMenu = () => {
     playClick();
     setCurrentScreen("menu");
+    setShowingIntro(false);
   };
 
   const completeIsland1 = () => {
@@ -180,11 +188,11 @@ export default function App() {
               Taberna de inicio
             </p>
 
-            <h2 className="mt-4 text-3xl font-black uppercase tracking-wide md:text-4xl">
+            <h2 className="mt-4 text-3xl font-black uppercase tracking-wide md:text-4xl text-center">
               Elige tu isla
             </h2>
 
-            <p className="mt-3 max-w-2xl text-sm font-semibold text-blue-900/80 md:text-base">
+            <p className="mt-3 w-full text-sm font-semibold text-blue-900/80 md:text-base text-center">
               El Rey de los Analistas, Gold Roger, antes de retirarse dejó el mayor tesoro de la Ingeniería de Software escondido en la última isla del Grand Line: El "One Spec" (El Documento de Especificación de Requisitos Perfecto).<br/>Tú eres un joven capitán pirata que aspira a ser el Rey de los Analistas. Para lograrlo, debes construir el barco definitivo (el sistema de software) y reclutar a una tripulación. Deberás navegar por 7 islas diferentes. En cada isla te enfrentarás a un minijuego que pondrá a prueba tus conocimientos teóricos de GPDS (Ingeniería de Requisitos).
             </p>
 
@@ -242,13 +250,21 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <Isla1Loguetown
-              onBackToMenu={backToMenu}
-              onIslandCompleted={completeIsland1}
-              playClick={playClick}
-              playError={playError}
-              playSuccess={playSuccess}
-            />
+            {showingIntro ? (
+              <IslandIntro 
+                islandKey="isla1" 
+                onStart={startIsland} 
+                playClick={playClick}
+              />
+            ) : (
+              <Isla1Loguetown
+                onBackToMenu={backToMenu}
+                onIslandCompleted={completeIsland1}
+                playClick={playClick}
+                playError={playError}
+                playSuccess={playSuccess}
+              />
+            )}
           </motion.div>
         )}
 
@@ -258,72 +274,150 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <Isla2Water7
-              onBackToMenu={backToMenu}
-              onIslandCompleted={() => {
-                setUnlockedIslands((prev) => ({ ...prev, isla3: true }));
-                setCurrentScreen("menu");
-              }}
-              playError={playError}
-              playSuccess={playSuccess}
-            />
+            {showingIntro ? (
+              <IslandIntro 
+                islandKey="isla2" 
+                onStart={startIsland} 
+                playClick={playClick}
+              />
+            ) : (
+              <Isla2Water7
+                onBackToMenu={backToMenu}
+                onIslandCompleted={() => {
+                  setUnlockedIslands((prev) => ({ ...prev, isla3: true }));
+                  setCurrentScreen("menu");
+                }}
+                playError={playError}
+                playSuccess={playSuccess}
+              />
+            )}
           </motion.div>
         )}
 
         {currentScreen === "isla3" && (
-          <Isla3Sabaody
-            onBackToMenu={backToMenu}
-            onIslandCompleted={() => {
-              setUnlockedIslands((prev) => ({ ...prev, isla4: true }));
-              setCurrentScreen("menu");
-            }}
-            playClick={playClick}
-          />
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {showingIntro ? (
+              <IslandIntro 
+                islandKey="isla3" 
+                onStart={startIsland} 
+                playClick={playClick}
+              />
+            ) : (
+              <Isla3Sabaody
+                onBackToMenu={backToMenu}
+                onIslandCompleted={() => {
+                  setUnlockedIslands((prev) => ({ ...prev, isla4: true }));
+                  setCurrentScreen("menu");
+                }}
+                playClick={playClick}
+              />
+            )}
+          </motion.div>
         )}
 
         {currentScreen === "isla4" && (
-          <Isla4Sabaody
-            onBackToMenu={backToMenu}
-            onIslandCompleted={() => {
-              setUnlockedIslands((prev) => ({ ...prev, isla5: true }));
-              setCurrentScreen("menu");
-            }}
-            playClick={playClick}
-          />
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {showingIntro ? (
+              <IslandIntro 
+                islandKey="isla4" 
+                onStart={startIsland} 
+                playClick={playClick}
+              />
+            ) : (
+              <Isla4Sabaody
+                onBackToMenu={backToMenu}
+                onIslandCompleted={() => {
+                  setUnlockedIslands((prev) => ({ ...prev, isla5: true }));
+                  setCurrentScreen("menu");
+                }}
+                playClick={playClick}
+              />
+            )}
+          </motion.div>
         )}
 
         {currentScreen === "isla5" && (
-          <Isla5Wano
-            onBackToMenu={backToMenu}
-            onIslandCompleted={() => {
-              setUnlockedIslands((prev) => ({ ...prev, isla6: true }));
-              setCurrentScreen("menu");
-            }}
-            playClick={playClick}
-          />
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {showingIntro ? (
+              <IslandIntro 
+                islandKey="isla5" 
+                onStart={startIsland} 
+                playClick={playClick}
+              />
+            ) : (
+              <Isla5Wano
+                onBackToMenu={backToMenu}
+                onIslandCompleted={() => {
+                  setUnlockedIslands((prev) => ({ ...prev, isla6: true }));
+                  setCurrentScreen("menu");
+                }}
+                playClick={playClick}
+              />
+            )}
+          </motion.div>
         )}
 
         {currentScreen === "isla6" && (
-          <Isla6EggHead
-            onBackToMenu={backToMenu}
-            onIslandCompleted={() => {
-              setUnlockedIslands((prev) => ({ ...prev, isla7: true }));
-              setCurrentScreen("menu");
-            }}
-            playClick={playClick}
-            playError={playError}
-            playSuccess={playSuccess}
-          />
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {showingIntro ? (
+              <IslandIntro 
+                islandKey="isla6" 
+                onStart={startIsland} 
+                playClick={playClick}
+              />
+            ) : (
+              <Isla6EggHead
+                onBackToMenu={backToMenu}
+                onIslandCompleted={() => {
+                  setUnlockedIslands((prev) => ({ ...prev, isla7: true }));
+                  setCurrentScreen("menu");
+                }}
+                playClick={playClick}
+                playError={playError}
+                playSuccess={playSuccess}
+              />
+            )}
+          </motion.div>
         )}
 
         {currentScreen === "isla7" && (
-          <Isla7LaughTale
-            onBackToMenu={backToMenu}
-            onIslandCompleted={() => {
-              setCurrentScreen("victory");
-            }}
-            playClick={playClick}
-          />
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {showingIntro ? (
+              <IslandIntro 
+                islandKey="isla7" 
+                onStart={startIsland} 
+                playClick={playClick}
+              />
+            ) : (
+              <Isla7LaughTale
+                onBackToMenu={backToMenu}
+                onIslandCompleted={() => {
+                  setCurrentScreen("victory");
+                }}
+                playClick={playClick}
+              />
+            )}
+          </motion.div>
         )}
 
         {currentScreen === "victory" && (
