@@ -3,8 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import imageFail from "../image/isla5KaidoFallo.png";
 import imageSuccess from "../image/isla5KaidoAcierto.png";
 
-const TOTAL_TIME = 55;
-const MAX_LIVES = 3;
+const TOTAL_TIME = 45;
+const MAX_LIVES = 2;
 
 const REQUIREMENTS = [
   {
@@ -46,6 +46,30 @@ const REQUIREMENTS = [
     after: " para evitar sabotajes de infiltrados.",
     reemplazo: "protegido con cifrado AES-256 y MFA obligatoria",
     razon: "Es auditable mediante controles tecnicos concretos.",
+  },
+  {
+    id: "r6",
+    before: "El sistema de vigilancia debe funcionar de manera ",
+    palabra: "eficiente",
+    after: " durante todo el dia.",
+    reemplazo: "consumiendo menos de 500W y procesando 30 fps minimo",
+    razon: "Define consumo energetico y rendimiento medibles.",
+  },
+  {
+    id: "r7",
+    before: "La plataforma de logistica debe tener una interfaz ",
+    palabra: "amigable",
+    after: " para los soldados rasos.",
+    reemplazo: "con indice SUS superior a 75 puntos en tests de usuario",
+    razon: "Usa metrica estandar de usabilidad verificable.",
+  },
+  {
+    id: "r8",
+    before: "El tiempo de respaldo de datos debe ser ",
+    palabra: "aceptable",
+    after: " para no interrumpir operaciones.",
+    reemplazo: "completado en menos de 4 horas en ventana nocturna",
+    razon: "Establece limite temporal concreto y verificable.",
   },
 ];
 
