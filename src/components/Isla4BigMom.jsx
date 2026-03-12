@@ -3,10 +3,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import imageFail from "../image/isla4BigMomFallo.png";
 import imageSuccess from "../image/isla4BigMomAcierto.png";
 
-const GAME_TIME_SECONDS = 50;
+const GAME_TIME_SECONDS = 40;
 const MAX_TIME_SECONDS = 60;
-const TIME_GAIN_ON_HIT = 3;
-const TIME_PENALTY_ON_FAIL = 5;
+const TIME_GAIN_ON_HIT = 2;
+const TIME_PENALTY_ON_FAIL = 7;
 const SWIPE_THRESHOLD = 120;
 
 const REQUIREMENTS_POOL = [
@@ -14,10 +14,14 @@ const REQUIREMENTS_POOL = [
   { texto: "El sistema debe permitir recuperar la contrasena por correo.", tipo: "funcional" },
   { texto: "La app debe generar reportes PDF de ventas.", tipo: "funcional" },
   { texto: "El cliente puede filtrar pedidos por fecha y estado.", tipo: "funcional" },
-  { texto: "La respuesta de busqueda debe tardar menos de 2 segundos.", tipo: "no-funcional" },
-  { texto: "El sistema debe tener disponibilidad minima del 99.9%.", tipo: "no-funcional" },
-  { texto: "Las contrasenas deben almacenarse cifradas con hash seguro.", tipo: "no-funcional" },
-  { texto: "La interfaz debe ser usable desde moviles y tablets.", tipo: "no-funcional" },
+  { texto: "El administrador puede eliminar usuarios inactivos.", tipo: "funcional" },
+  { texto: "El sistema debe enviar notificaciones push al móvil.", tipo: "funcional" },
+  { texto: "La respuesta de búsqueda debe tardar menos de 2 segundos.", tipo: "no-funcional" },
+  { texto: "El sistema debe tener disponibilidad mínima del 99.9%.", tipo: "no-funcional" },
+  { texto: "Las contraseñas deben almacenarse cifradas con hash seguro.", tipo: "no-funcional" },
+  { texto: "La interfaz debe ser usable desde móviles y tablets.", tipo: "no-funcional" },
+  { texto: "El tiempo de carga de la página principal debe ser menor a 3 segundos.", tipo: "no-funcional" },
+  { texto: "El sistema debe cumplir con el estándar ISO 27001 de seguridad.", tipo: "no-funcional" },
 ];
 
 function shuffle(array) {
