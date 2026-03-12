@@ -43,7 +43,10 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
   const controls = useAnimation();
 
   const currentCard = deck[cardIndex] || null;
-  const progressPercent = useMemo(() => Math.max(0, (timeLeft / MAX_TIME_SECONDS) * 100), [timeLeft]);
+  const progressPercent = useMemo(
+    () => Math.min(100, Math.max(0, (timeLeft / GAME_TIME_SECONDS) * 100)),
+    [timeLeft]
+  );
 
   const showFeedback = useCallback((text, color) => {
     setFeedback({ text, color });
