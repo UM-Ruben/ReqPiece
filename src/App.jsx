@@ -511,6 +511,8 @@ export default function App() {
                   setCurrentScreen("victory");
                 }}
                 playClick={playClick}
+                playError={playError}
+                playSuccess={playSuccess}
               />
             )}
           </motion.div>
