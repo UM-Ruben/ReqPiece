@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Compass, Scroll, Swords } from "lucide-react";
+import { BookOpen, Compass, Scroll, Swords } from "lucide-react";
 import PropTypes from "prop-types";
 
 export default function IslandIntro({ islandKey, onStart, playClick }) {
@@ -53,8 +53,8 @@ export default function IslandIntro({ islandKey, onStart, playClick }) {
       title: 'EL LABORATORIO DEL FUTURO CORROMPIDO',
       subtitle: 'EGGHEAD',
       description: [
-        'Egghead, la isla del futuro donde la tecnología de Vegapunk trasciende la imaginación humana. Pero en esta línea temporal, el genio científico ha sido corrompido y sus creaciones te esperan con trampas lógicas, interfaces engañosas y especificaciones deliberadamente ambiguas.',
-        'Sistemas de alta complejidad, APIs cuánticas, seraphims programados con bugs ocultos. Para sobrevivir al laboratorio definitivo, debes dominar la trazabilidad cuántica y detectar cada inconsistencia en la documentación técnica. Un requisito mal interpretado aquí no falla gradualmente: explota instantáneamente.'
+        'Egghead, la isla del futuro donde la tecnología de Vegapunk trasciende la imaginación humana. Pero en esta línea temporal, el genio científico ha sido corrompido y sus creaciones te esperan con cambios de requisitos, impactos cruzados y documentación viva.',
+        'Aquí no ganarás por adivinar. Tendrás que leer un requisito, pensar qué artefactos del sistema se ven afectados y registrar la traza correcta. Esa es justamente la idea detrás de herramientas como IBM DOORS o muchas herramientas CASE/CARE: mantener la relación entre requisitos, diseño, pruebas, código y datos cuando el sistema cambia.'
       ],
       cta: '¡HACKEAR EL LABORATORIO!',
     },
@@ -133,6 +133,36 @@ export default function IslandIntro({ islandKey, onStart, playClick }) {
           </p>
         ))}
       </motion.div>
+
+      {islandKey === "isla6" && (
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          className="mx-auto mb-10 max-w-4xl rounded-2xl border-4 border-cyan-700/50 bg-gradient-to-br from-slate-950 via-cyan-950 to-slate-900 p-6 text-cyan-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]"
+        >
+          <div className="mb-4 flex items-center gap-3">
+            <BookOpen className="h-6 w-6 text-cyan-300" />
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-cyan-200">Bitácora de Vegapunk</p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-cyan-500/40 bg-cyan-500/10 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.15em] text-cyan-300">Cómo se juega</p>
+              <p className="mt-2 text-sm font-semibold leading-relaxed text-cyan-50/90">
+                Selecciona un requisito, lee su objetivo y después inspecciona los artefactos del sistema. Solo debes enlazar los que realmente cambiarían si ese requisito se modifica.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-fuchsia-500/40 bg-fuchsia-500/10 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.15em] text-fuchsia-300">Qué representa</p>
+              <p className="mt-2 text-sm font-semibold leading-relaxed text-cyan-50/90">
+                Igual que en DOORS o en herramientas CASE/CARE, aquí practicas trazabilidad e impacto del cambio: requisito, artefacto afectado y evidencia de que la relación existe.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Call to Action */}
       <motion.div
