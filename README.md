@@ -15,6 +15,7 @@ src/
   index.css
   main.jsx
   components/
+    IslandIntro.jsx         # pantalla de introducción narrativa
     Isla1Loguetown.jsx      # minijuego activo
     Isla2Water7.jsx         # minijuego activo
     Isla3Sabaody.jsx        # minijuego activo
@@ -22,6 +23,8 @@ src/
     Isla5Wano.jsx           # minijuego activo
     Isla6EggHead.jsx        # minijuego activo
     Isla7LaughTale.jsx      # pantalla final
+  data/
+    islandIntroData.js      # textos narrativos de cada isla
   hooks/
     usePirateAudio.js       # efectos de sonido (click, error, éxito)
   image/
@@ -43,20 +46,34 @@ src/
 
 ```bash
 npm install
+npm install prop-types
 npm run dev          # arranca el servidor de desarrollo
 npm run build        # genera la versión de producción
 npm run preview      # sirve la build localmente
 ```
 
+### Dependencias principales
+
+- **React** - Librería de UI
+- **Framer Motion** - Animaciones fluidas
+- **Lucide React** - Iconos
+- **Tailwind CSS** - Estilos
+- **Vite** - Build tool
+- **prop-types** - Validación de props (necesario para IslandIntro.jsx)
+
+Si instalas el proyecto desde cero, todas las dependencias se instalarán automáticamente con `npm install`, exceptuando las de prop-types, por ello también has de ejecutar `npm install prop-types`.
+
 ## Cómo jugar
 
 1. Desde el menú principal, selecciona una isla desbloqueada.
-2. Las 7 islas aparecen listadas con estado `Desbloqueada` o `Bloqueada`.
-3. El progreso es secuencial: cada isla desbloquea la siguiente al completarse.
-4. Al ganar una isla se muestra su imagen de acierto y el botón **Siguiente isla**.
-5. Al pulsar **Siguiente isla**, vuelves al inicio (menú) para elegir manualmente la siguiente isla ya desbloqueada.
-6. Si fallas una isla, se muestra su imagen de fallo y opción de reintentar.
-7. La Isla 7 actúa como cierre del recorrido y conduce a la pantalla final de victoria.
+2. **Nueva funcionalidad**: Al entrar a una isla, primero verás una pantalla de introducción narrativa que fusiona la historia de One Piece con el concepto de Ingeniería de Requisitos que aprenderás.
+3. Tras leer la introducción, pulsa el botón CTA (Call-To-Action) para iniciar el minijuego.
+4. Las 7 islas aparecen listadas con estado `Desbloqueada` o `Bloqueada`.
+5. El progreso es secuencial: cada isla desbloquea la siguiente al completarse.
+6. Al ganar una isla se muestra su imagen de acierto y el botón **Siguiente isla**.
+7. Al pulsar **Siguiente isla**, vuelves al inicio (menú) para elegir manualmente la siguiente isla ya desbloqueada.
+8. Si fallas una isla, se muestra su imagen de fallo y opción de reintentar.
+9. La Isla 7 actúa como cierre del recorrido y conduce a la pantalla final de victoria.
 
 ## Flujo de progresión
 
@@ -66,6 +83,42 @@ npm run preview      # sirve la build localmente
 - `Isla 4` desbloquea `Isla 5`
 - `Isla 5` desbloquea `Isla 6`
 - `Isla 6` desbloquea `Isla 7`
+
+## Pantallas de introducción narrativa
+
+Cada isla cuenta con una pantalla de introducción épica que aparece antes del minijuego. Estas pantallas fusionan la narrativa de One Piece con conceptos específicos de Ingeniería de Requisitos (SRS):
+
+### 🏴‍☠️ Isla 1: Loguetown - "LA CIUDAD DEL PRINCIPIO Y EL FIN"
+**Enfoque SRS**: Recolección inicial de requisitos, visión del cliente y definición del alcance del proyecto.  
+**Narrativa**: El inicio de la gran aventura donde Gold Roger pronunció sus últimas palabras. Aquí aprendes a trazar tu ruta con el Log Pose del SRS.
+
+### 🔧 Isla 2: Water 7 - "LOS MAESTROS CARPINTEROS DE GALLEY-LA"
+**Enfoque SRS**: Requisitos no funcionales (rendimiento, seguridad, resistencia) y especificaciones técnicas.  
+**Narrativa**: Los carpinteros de Galley-La necesitan especificaciones precisas, no sueños. Debes traducir anhelos en requisitos técnicos concretos.
+
+### ⚡ Isla 3: Archipiélago Sabaody - "EL ENCUENTRO DE LAS SUPERNOVAS"
+**Enfoque SRS**: Casos de uso complejos, priorización de requisitos (MoSCoW) y gestión de múltiples stakeholders.  
+**Narrativa**: Once Supernovas con ambiciones diferentes. Aprenderás a distinguir entre requisitos (QUÉ) y soluciones técnicas (CÓMO).
+
+### 🍰 Isla 4: Whole Cake - "LA IRA DE BIG MOM"
+**Enfoque SRS**: Gestión de requisitos volátiles y manejo de cambios de última hora.  
+**Narrativa**: Big Mom y su hambre insaciable. Los clientes son como Yonkos: poderosos e impredecibles. Clasifica requisitos funcionales y no funcionales antes de que sea tarde.
+
+### ⚔️ Isla 5: Wano - "LA FORTALEZA DE ONIGASHIMA"
+**Enfoque SRS**: Restricciones del sistema, trazabilidad bajo condiciones extremas y validación según IEEE 830.  
+**Narrativa**: Para derrocar a Kaido y su sistema legacy, necesitas requisitos verificables, no ambiguos, completos y consistentes. La trazabilidad es tu katana.
+
+### 🔬 Isla 6: Egghead - "EL LABORATORIO DEL FUTURO CORROMPIDO"
+**Enfoque SRS**: Documentación de sistemas complejos, requisitos de interfaces externas (APIs) y detección de ambigüedades.  
+**Narrativa**: La tecnología de Vegapunk corrompida. Sistemas cuánticos, APIs engañosas y trampas lógicas. Un requisito mal interpretado explota instantáneamente.
+
+### 👑 Isla 7: Laugh Tale - "EL TESORO FINAL: EL ONE SPEC"
+**Enfoque SRS**: Consolidación del Documento SRS perfecto. Proyecto finalizado, validado y listo para ser leyenda.  
+**Narrativa**: El lugar donde Gold Roger dejó su legado. Aquí reclamarás el One Spec y serás coronado como el Rey de los Analistas.
+
+---
+
+## Descripción detallada de minijuegos
 
 ### Isla 1 — Loguetown: *Ordena los mapas*
 
@@ -131,3 +184,73 @@ Se muestran frases de un cliente o programador y debes elegir la **traducción t
 - Pantalla final previa a la victoria absoluta del juego.
 - Funciona como cierre narrativo de la travesía tras completar EggHead.
 - Desde aquí se accede a la pantalla final donde se reclama el **One Spec**.
+
+---
+
+## Componente IslandIntro (Pantallas de Introducción)
+
+### Descripción técnica
+
+El componente `IslandIntro.jsx` es una pantalla narrativa épica que aparece antes de cada minijuego. Utiliza **Framer Motion** para animaciones suaves y **Lucide React** para iconos decorativos.
+
+### Características del componente:
+
+- **Animaciones de entrada**: Scale y opacity con delays escalonados para crear un efecto de "revelación" épico
+- **Diseño temático**: Estilo pergamino pirata con bordes dorados, gradientes cálidos y tipografía bold uppercase
+- **Estructura narrativa**:
+  - Subtítulo (nombre de la isla)
+  - Título épico principal
+  - Separador decorativo con iconos
+  - 2 párrafos de descripción narrativa
+  - Botón CTA personalizado por isla
+  - Decoración inferior
+
+### Props del componente:
+
+```jsx
+<IslandIntro 
+  islandKey="isla1"      // 'isla1' hasta 'isla7'
+  onStart={handleStart}  // función que se ejecuta al pulsar el CTA
+  playClick={playClick}  // opcional: audio feedback
+/>
+```
+
+### Integración en App.jsx:
+
+Se añadió un estado `showingIntro` que controla la visibilidad de la introducción:
+
+```jsx
+const [showingIntro, setShowingIntro] = useState(false);
+
+// Al hacer clic en una isla desde el menú
+const goToIsland = (islandKey) => {
+  setCurrentScreen(islandKey);
+  setShowingIntro(true);  // Muestra la intro primero
+};
+
+// Al pulsar el CTA de la introducción
+const startIsland = () => {
+  setShowingIntro(false);  // Oculta intro y muestra minijuego
+};
+```
+
+### Flujo de navegación actualizado:
+
+1. **Menú** → Clic en isla desbloqueada
+2. **Intro narrativa** → Lectura de la historia + contexto SRS
+3. **CTA** → Botón "¡ZARPAR!" / "¡ASALTAR!" / etc.
+4. **Minijuego** → Desafío interactivo
+5. **Resultado** → Victoria/Derrota
+6. **Menú** → Regreso al inicio
+
+### Comandos de consola para desarrollo:
+
+En modo desarrollo (`npm run dev`), puedes usar los siguientes comandos en la consola del navegador:
+
+```javascript
+reqpiece.help                 // Muestra ayuda de comandos
+reqpiece.resolveIsland(1)     // Marca Isla 1 como completada y desbloquea Isla 2
+reqpiece.resolveIsland(6)     // Desbloquea todas las islas hasta la 7
+```
+
+**Nota**: Los comandos de consola solo funcionan en modo desarrollo, no en producción.
