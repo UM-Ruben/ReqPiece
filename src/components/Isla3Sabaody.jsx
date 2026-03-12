@@ -3,9 +3,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import imageFail from "../image/isla3Fallo.png";
 import imageSuccess from "../image/isla3Acierto.png";
 
-const GAME_TIME_SECONDS = 60;
+const GAME_TIME_SECONDS = 45;
 const MAX_LIVES = 3;
-const MIN_SCORE_TO_WIN = 20;
+const MIN_SCORE_TO_WIN = 30;
 
 const BARREL_POOL = [
   { texto: "Restringir el acceso a personal no autorizado", tipo: "problema" },
@@ -166,8 +166,8 @@ export default function Isla3Sabaody({ onIslandCompleted, playClick }) {
         y: 30 + Math.random() * 80,
         w: width,
         h: height,
-        vx: (Math.random() - 0.5) * 14,
-        vy: 38 + Math.random() * 18,
+        vx: (Math.random() - 0.5) * 20,
+        vy: 48 + Math.random() * 22,
       });
     };
 
@@ -204,7 +204,7 @@ export default function Isla3Sabaody({ onIslandCompleted, playClick }) {
 
       if (running && !outcome) {
         spawnTimerRef.current += dt;
-        if (spawnTimerRef.current >= 1.8) {
+        if (spawnTimerRef.current >= 1.3) {
           spawnTimerRef.current = 0;
           createBarrel();
         }
