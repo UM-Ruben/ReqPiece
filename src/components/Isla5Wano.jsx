@@ -73,7 +73,7 @@ const REQUIREMENTS = [
   },
 ];
 
-export default function Isla5Wano({ onIslandCompleted, playClick }) {
+export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick }) {
   const [resolvedMap, setResolvedMap] = useState(() =>
     REQUIREMENTS.reduce((acc, req) => ({ ...acc, [req.id]: false }), {})
   );
@@ -177,8 +177,20 @@ export default function Isla5Wano({ onIslandCompleted, playClick }) {
       transition={{ duration: 0.35 }}
       className="relative mx-auto w-full max-w-5xl rounded-3xl border-4 border-zinc-700/70 bg-gradient-to-b from-zinc-100 via-stone-100 to-amber-100 p-6 text-zinc-900 shadow-[0_18px_40px_rgba(0,0,0,0.35)] md:p-8"
     >
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-red-900">Isla 5: Pais de Wano - Onigashima</p>
-      <h2 className="mt-2 text-3xl font-black uppercase">El Corte de la Precision (IEEE 830)</h2>
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-red-900">Isla 5: Pais de Wano - Onigashima</p>
+          <h2 className="mt-2 text-3xl font-black uppercase">El Corte de la Precision (IEEE 830)</h2>
+        </div>
+
+        <button
+          type="button"
+          onClick={onBackToMenu}
+          className="rounded-lg border border-amber-500/60 bg-amber-200/20 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-zinc-900 transition hover:bg-amber-200/40"
+        >
+          Volver al menú
+        </button>
+      </div>
 
       <div className="mt-4 rounded-2xl border-2 border-zinc-500/60 bg-zinc-950 p-4 text-amber-100">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-300">Dialogo de introduccion</p>

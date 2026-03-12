@@ -33,7 +33,7 @@ function shuffle(array) {
   return copied;
 }
 
-export default function Isla4Sabaody({ onIslandCompleted, playClick }) {
+export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClick }) {
   const [deck, setDeck] = useState(() => shuffle(REQUIREMENTS_POOL));
   const [cardIndex, setCardIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -153,11 +153,23 @@ export default function Isla4Sabaody({ onIslandCompleted, playClick }) {
       transition={{ duration: 0.35 }}
       className="relative mx-auto w-full max-w-5xl rounded-3xl border-4 border-pink-300/90 bg-gradient-to-b from-pink-100 via-rose-100 to-yellow-100 p-5 text-slate-800 shadow-[0_18px_40px_rgba(0,0,0,0.28)] md:p-8"
     >
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-pink-700">Isla 4: Whole Cake</p>
-      <h2 className="mt-2 text-3xl font-black uppercase text-rose-900">Swipe de Requisitos Dulces</h2>
-      <p className="mt-2 text-sm font-semibold text-rose-900/85">
-        Arrastra la tarjeta: izquierda = Funcional, derecha = No Funcional. Si fallas o tardas, Big Mom entra en rabieta.
-      </p>
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-pink-700">Isla 4: Whole Cake</p>
+          <h2 className="mt-2 text-3xl font-black uppercase text-rose-900">Swipe de Requisitos Dulces</h2>
+          <p className="mt-2 text-sm font-semibold text-rose-900/85">
+            Arrastra la tarjeta: izquierda = Funcional, derecha = No Funcional. Si fallas o tardas, Big Mom entra en rabieta.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onBackToMenu}
+          className="rounded-lg border border-amber-500/60 bg-amber-200/20 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-rose-900 transition hover:bg-amber-200/40"
+        >
+          Volver al menú
+        </button>
+      </div>
 
       <div className="mt-4 rounded-xl border-2 border-rose-300/70 bg-white/60 p-3">
         <div className="mb-2 flex items-center justify-between text-xs font-black uppercase tracking-[0.14em] text-rose-800">

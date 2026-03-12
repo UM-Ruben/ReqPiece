@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Compass } from "lucide-react";
 import imageFail from "../image/isla3Fallo.png";
 import imageSuccess from "../image/isla3Acierto.png";
 
@@ -41,7 +42,7 @@ function wrapTextLines(ctx, text, maxWidth) {
   return lines.slice(0, 3);
 }
 
-export default function Isla3Sabaody({ onIslandCompleted, playClick }) {
+export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClick }) {
   const canvasRef = useRef(null);
   const animationRef = useRef(0);
   const spawnTimerRef = useRef(0);
@@ -333,11 +334,26 @@ export default function Isla3Sabaody({ onIslandCompleted, playClick }) {
       transition={{ duration: 0.35 }}
       className="relative mx-auto w-full max-w-5xl rounded-3xl border-4 border-amber-800/70 bg-gradient-to-b from-amber-50 via-amber-100 to-yellow-100 p-6 text-blue-950 shadow-[0_18px_40px_rgba(0,0,0,0.35)] md:p-8"
     >
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-900">Isla 3: Archipielago Sabaody</p>
-      <h2 className="mt-2 text-3xl font-black uppercase">Shooter Arcade - QUE vs COMO</h2>
-      <p className="mt-2 text-sm font-semibold text-blue-900/85">
-        Destruye barriles de solucion en el aire y deja caer los de problema para rescatar requisitos.
-      </p>
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-amber-900/30 bg-amber-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-900">
+            <Compass className="h-4 w-4" />
+            Isla 3: Archipielago Sabaody
+          </p>
+          <h2 className="text-3xl font-black uppercase tracking-wide text-blue-950 md:text-4xl">Shooter Arcade - QUE vs COMO</h2>
+          <p className="mt-2 text-sm font-semibold text-blue-900/85">
+            Destruye barriles de solucion en el aire y deja caer los de problema para rescatar requisitos.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onBackToMenu}
+          className="rounded-lg border border-amber-500/60 bg-amber-200/20 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-blue-950 transition hover:bg-amber-200/40"
+        >
+          Volver al menú
+        </button>
+      </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-black uppercase tracking-[0.08em]">
         <span className="rounded-lg bg-blue-950 px-3 py-2 text-amber-100">Puntaje: {score}</span>

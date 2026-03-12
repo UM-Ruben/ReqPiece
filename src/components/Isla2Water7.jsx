@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Cpu, Heart, User } from "lucide-react";
+import { Compass, Cpu, Heart, User } from "lucide-react";
 import imageFail from "../image/isla2Fallo.png";
 import imageSuccess from "../image/isla2Acierto.png";
 
@@ -222,7 +222,7 @@ function shuffleOptions(options) {
 
 const MAX_LIVES = 5;
 
-export default function Isla2Water7({ onIslandCompleted, playError, playSuccess }) {
+export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playError, playSuccess }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lives, setLives] = useState(MAX_LIVES);
   const [outcome, setOutcome] = useState(null);
@@ -301,6 +301,26 @@ export default function Isla2Water7({ onIslandCompleted, playError, playSuccess 
 
   return (
     <section className="relative mx-auto max-w-3xl rounded-3xl bg-stone-900 p-6 text-amber-50">
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-amber-900/30 bg-amber-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-900">
+            <Compass className="h-4 w-4" />
+            Isla 2: Water 7
+          </p>
+          <h2 className="text-3xl font-black uppercase tracking-wide text-amber-50 md:text-4xl">
+            Traduce al lenguaje técnico
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          onClick={onBackToMenu}
+          className="rounded-lg border border-amber-500/60 bg-amber-200/20 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-amber-50 transition hover:bg-amber-200/40"
+        >
+          Volver al menú
+        </button>
+      </div>
+
       <div className="flex items-center justify-center gap-1">
         {Array.from({ length: MAX_LIVES }).map((_, index) => (
           <Heart
