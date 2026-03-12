@@ -11,20 +11,91 @@ import Isla7LaughTale from "./components/Isla7LaughTale";
 import IslandIntro from "./components/IslandIntro";
 import { usePirateAudio } from "./hooks/usePirateAudio";
 
+const ISLAND_KEYS = ["isla1", "isla2", "isla3", "isla4", "isla5", "isla6", "isla7"];
+
+const ISLAND_SLUGS = {
+  isla1: "isla1-loguetown",
+  isla2: "isla2-water7",
+  isla3: "isla3-sabaody",
+  isla4: "isla4-wholecake",
+  isla5: "isla5-wano",
+  isla6: "isla6-egghead",
+  isla7: "isla7-laughtale",
+};
+
+const SLUG_TO_ISLAND = Object.fromEntries(
+  Object.entries(ISLAND_SLUGS).map(([key, slug]) => [slug, key])
+);
+
+const UNLOCKED_ISLANDS_STORAGE_KEY = "reqpiece-unlocked-islands";
+const DEFAULT_UNLOCKED_ISLANDS = {
+  isla1: true,
+  isla2: false,
+  isla3: false,
+  isla4: false,
+  isla5: false,
+  isla6: false,
+  isla7: false,
+};
+
+function loadUnlockedIslands() {
+  if (typeof window === "undefined") return { ...DEFAULT_UNLOCKED_ISLANDS };
+
+  try {
+    const storedValue = window.localStorage.getItem(UNLOCKED_ISLANDS_STORAGE_KEY);
+    if (!storedValue) return { ...DEFAULT_UNLOCKED_ISLANDS };
+
+    const parsed = JSON.parse(storedValue);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return { ...DEFAULT_UNLOCKED_ISLANDS };
+    }
+
+    // Enforce sequential integrity: if any island is locked, all subsequent must be too
+    const result = { ...DEFAULT_UNLOCKED_ISLANDS };
+    for (let i = 0; i < ISLAND_KEYS.length; i++) {
+      const key = ISLAND_KEYS[i];
+      if (parsed[key] === true) {
+        result[key] = true;
+      } else {
+        break;
+      }
+    }
+    return result;
+  } catch {
+    return { ...DEFAULT_UNLOCKED_ISLANDS };
+  }
+}
+
+function getScreenFromPath(pathname, unlockedIslands) {
+  const normalized = (pathname.replace(/\/+$/, "") || "/").toLowerCase();
+
+  if (normalized === "/") return "menu";
+  if (normalized === "/victoria") {
+    const allUnlocked = ISLAND_KEYS.every((k) => unlockedIslands[k]);
+    return allUnlocked ? "victory" : "menu";
+  }
+
+  const slug = normalized.slice(1);
+  const islandKey = SLUG_TO_ISLAND[slug];
+  if (!islandKey) return "menu";
+  if (!unlockedIslands[islandKey]) return "menu";
+  return islandKey;
+}
+
+function getPathFromScreen(screen) {
+  if (screen === "menu") return "/";
+  if (screen === "victory") return "/victoria";
+  const slug = ISLAND_SLUGS[screen];
+  return slug ? `/${slug}` : "/";
+}
+
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState("menu");
+  const [unlockedIslands, setUnlockedIslands] = useState(loadUnlockedIslands);
+  const [currentScreen, setCurrentScreen] = useState(() =>
+    getScreenFromPath(window.location.pathname, loadUnlockedIslands())
+  );
   const [showingIntro, setShowingIntro] = useState(false);
-  const [unlockedIslands, setUnlockedIslands] = useState({
-    isla1: true,
-    isla2: false,
-    isla3: false,
-    isla4: false,
-    isla5: false,
-    isla6: false,
-    isla7: false,
-  });
   const { playClick, playError, playSuccess } = usePirateAudio();
-  const islandKeys = ["isla1", "isla2", "isla3", "isla4", "isla5", "isla6", "isla7"];
 
   const goToIsland = (islandKey) => {
     playClick();
@@ -99,6 +170,37 @@ export default function App() {
   const unlockedCount = Object.values(unlockedIslands).filter(Boolean).length;
 
   useEffect(() => {
+    window.localStorage.setItem(UNLOCKED_ISLANDS_STORAGE_KEY, JSON.stringify(unlockedIslands));
+  }, [unlockedIslands]);
+
+  // Redirect to menu if current screen is a locked island (safety net)
+  useEffect(() => {
+    if (ISLAND_KEYS.includes(currentScreen) && !unlockedIslands[currentScreen]) {
+      setCurrentScreen("menu");
+      setShowingIntro(false);
+    }
+  }, [currentScreen, unlockedIslands]);
+
+  useEffect(() => {
+    const nextPath = getPathFromScreen(currentScreen);
+    const currentPath = (window.location.pathname.replace(/\/+$/, "") || "/").toLowerCase();
+    if (currentPath !== nextPath) {
+      window.history.pushState({ screen: currentScreen }, "", nextPath);
+    }
+  }, [currentScreen]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const unlocked = loadUnlockedIslands();
+      setCurrentScreen(getScreenFromPath(window.location.pathname, unlocked));
+      setShowingIntro(false);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
     if (!import.meta.env.DEV) {
       return undefined;
     }
@@ -107,23 +209,17 @@ export default function App() {
 
     const resolveIsland = (islandNumber) => {
       const parsed = Number(islandNumber);
-      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 6) {
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 7) {
         // eslint-disable-next-line no-console
         console.error("Uso: reqpiece.resolveIsland(<1-7>)");
         return false;
       }
 
-      const unlockUntil = Math.min(6, parsed + 1);
+      const unlockUntil = Math.min(7, parsed + 1);
       setUnlockedIslands(() => {
-        const next = {
-          isla1: false,
-          isla2: false,
-          isla3: false,
-          isla4: false,
-          isla5: false,
-          isla6: false,          isla7: false,        };
+        const next = { ...DEFAULT_UNLOCKED_ISLANDS };
 
-        islandKeys.slice(0, unlockUntil).forEach((key) => {
+        ISLAND_KEYS.slice(0, unlockUntil).forEach((key) => {
           next[key] = true;
         });
 

@@ -68,6 +68,9 @@ npm run preview      # sirve la build localmente
 - La **Isla 3** oculta el cursor nativo dentro del canvas y corrige la alineación del puntero visual del shooter.
 - La **Isla 6** fue rediseñada como una experiencia de trazabilidad inspirada en **IBM DOORS** y herramientas **CASE/CARE**.
 - La introducción de **EggHead** ahora incluye una explicación didáctica del objetivo educativo y de cómo interpretar el minijuego.
+- La navegación ahora usa rutas con nombre de isla (`/isla1-loguetown`, `/isla2-water7`, ..., `/isla7-laughtale`) para que al recargar se mantenga la isla actual.
+- Las rutas están protegidas: acceder por URL a una isla bloqueada redirige al menú.
+- El progreso en `localStorage` se valida con integridad secuencial (no se puede desbloquear isla 5 sin haber desbloqueado la 4).
 
 ## Cómo jugar
 
@@ -81,6 +84,7 @@ npm run preview      # sirve la build localmente
 8. Al pulsar **Siguiente isla**, vuelves al inicio (menú) para elegir manualmente la siguiente isla ya desbloqueada.
 9. Si fallas una isla, se muestra su imagen de fallo y opción de reintentar.
 10. La Isla 7 actúa como cierre del recorrido y conduce a la pantalla final de victoria.
+11. Si entras en una isla, la URL cambia a `/isla1-loguetown`, `/isla2-water7`, etc.; al recargar la página dentro del minijuego, la app restaura esa misma isla siempre que esté desbloqueada.
 
 ## Flujo de progresión
 
@@ -253,6 +257,22 @@ const startIsland = () => {
 4. **Minijuego** → Desafío interactivo
 5. **Resultado** → Victoria/Derrota
 6. **Menú** → Regreso al inicio
+
+### Rutas y recarga
+
+- El menú principal se sirve en `/`.
+- Cada isla usa una ruta con nombre descriptivo:
+  - `/isla1-loguetown`
+  - `/isla2-water7`
+  - `/isla3-sabaody`
+  - `/isla4-wholecake`
+  - `/isla5-wano`
+  - `/isla6-egghead`
+  - `/isla7-laughtale`
+- La pantalla final usa la ruta `/victoria`.
+- Al recargar en una ruta de isla, la aplicación vuelve a abrir esa isla **solo si está desbloqueada**; si no, redirige al menú.
+- Acceder manualmente a `/victoria` solo funciona si todas las islas están desbloqueadas.
+- El progreso de islas desbloqueadas se guarda en `localStorage` con validación de integridad secuencial: si un valor se manipula saltándose el orden, se corrige automáticamente.
 
 ### Comandos de consola para desarrollo:
 
