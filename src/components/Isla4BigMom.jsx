@@ -33,7 +33,7 @@ function shuffle(array) {
   return copied;
 }
 
-export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClick }) {
+export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClick, playError, playSuccess }) {
   const [deck, setDeck] = useState(() => shuffle(REQUIREMENTS_POOL));
   const [cardIndex, setCardIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -98,10 +98,12 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
       const isCorrect = guessedType === currentCard.tipo;
 
       if (isCorrect) {
+        playSuccess?.();
         setScore((prev) => prev + 10);
         setTimeLeft((prev) => Math.min(MAX_TIME_SECONDS, prev + TIME_GAIN_ON_HIT));
         showFeedback("¡Delicioso!", "#16a34a");
       } else {
+        playError?.();
         setTimeLeft((prev) => {
           const next = Math.max(0, prev - TIME_PENALTY_ON_FAIL);
           if (next <= 0) {
@@ -114,8 +116,17 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
 
       nextCard();
     },
-    [currentCard, finishGame, nextCard, outcome, showFeedback]
+    [currentCard, finishGame, nextCard, outcome, playError, playSuccess, showFeedback]
   );
+
+  useEffect(() => {
+    if (!outcome) return;
+    if (outcome === "success") {
+      playSuccess?.();
+    } else {
+      playError?.();
+    }
+  }, [outcome, playError, playSuccess]);
 
   const resetGame = useCallback(() => {
     playClick();

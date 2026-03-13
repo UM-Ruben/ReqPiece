@@ -15,6 +15,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 const INITIAL_INTEGRITY = 100;
 const PHASE_ONE_TIME_LIMIT = 10;
 const PHASE_ONE_MIN_VALID = 2;
+const PHASE_ONE_STREAK_GOAL = 3;
+const PHASE_ONE_STREAK_REWARD = 2;
 const PHASE_TWO_BUDGET = 12;
 const SWIPE_THRESHOLD = 120;
 
@@ -234,10 +236,12 @@ export default function Isla7LaughTale({
   const [phaseOneTimeLeft, setPhaseOneTimeLeft] = useState(PHASE_ONE_TIME_LIMIT);
   const [phaseOneLocked, setPhaseOneLocked] = useState(false);
   const [phaseOneFeedback, setPhaseOneFeedback] = useState({ tone: "neutral", text: "Observa el fragmento y decide si describe un QUE valido." });
+  const [phaseOneStats, setPhaseOneStats] = useState({ total: 0, correct: 0, wrong: 0, streak: 0 });
 
   const [phaseTwoAssignments, setPhaseTwoAssignments] = useState(() => buildPhaseTwoAssignments([]));
   const [phaseTwoReview, setPhaseTwoReview] = useState({});
   const [phaseTwoFeedback, setPhaseTwoFeedback] = useState("Distribuye los fragmentos sin hundir el barco del proyecto.");
+  const [phaseTwoHistory, setPhaseTwoHistory] = useState([]);
   const [budgetCollapsed, setBudgetCollapsed] = useState(false);
 
   const [phaseThreeConnections, setPhaseThreeConnections] = useState([]);
@@ -402,12 +406,14 @@ export default function Isla7LaughTale({
     setPhaseOneTimeLeft(PHASE_ONE_TIME_LIMIT);
     setPhaseOneLocked(false);
     setPhaseOneFeedback({ tone: "neutral", text: "Observa el fragmento y decide si describe un QUE valido." });
+    setPhaseOneStats({ total: 0, correct: 0, wrong: 0, streak: 0 });
   }, []);
 
   const resetPhaseTwoState = useCallback((requirements) => {
     setPhaseTwoAssignments(buildPhaseTwoAssignments(requirements));
     setPhaseTwoReview({});
     setPhaseTwoFeedback("Distribuye los fragmentos sin hundir el barco del proyecto.");
+    setPhaseTwoHistory([]);
     setBudgetCollapsed(false);
   }, []);
 
@@ -508,6 +514,22 @@ export default function Isla7LaughTale({
       const nextFiltered = [...filteredRequirementsRef.current];
 
       if (isCorrect) {
+        const nextStats = {
+          total: phaseOneStats.total + 1,
+          correct: phaseOneStats.correct + 1,
+          wrong: phaseOneStats.wrong,
+          streak: phaseOneStats.streak + 1,
+        };
+        setPhaseOneStats(nextStats);
+
+        let rewardMessage = "";
+        if (nextStats.streak % PHASE_ONE_STREAK_GOAL === 0) {
+          const healedIntegrity = Math.min(100, integrityRef.current + PHASE_ONE_STREAK_REWARD);
+          setIntegridadPoneglyph(healedIntegrity);
+          integrityRef.current = healedIntegrity;
+          rewardMessage = ` Racha x${nextStats.streak}: +${PHASE_ONE_STREAK_REWARD}% de integridad.`;
+        }
+
         if (decision === "accept" && currentPhaseOneCard.requirement) {
           nextFiltered.push(currentPhaseOneCard.requirement);
           setRequisitosFiltrados(nextFiltered);
@@ -517,9 +539,16 @@ export default function Isla7LaughTale({
         playSuccess?.();
         setPhaseOneFeedback({
           tone: "success",
-          text: `Decision correcta. ${currentPhaseOneCard.reason}`,
+          text: `Decision correcta. ${currentPhaseOneCard.reason}${rewardMessage}`,
         });
       } else {
+        setPhaseOneStats((previous) => ({
+          total: previous.total + 1,
+          correct: previous.correct,
+          wrong: previous.wrong + 1,
+          streak: 0,
+        }));
+
         playError?.();
         setPhaseOneFeedback({
           tone: "error",
@@ -566,11 +595,36 @@ export default function Isla7LaughTale({
       phaseOneDeck.length,
       phaseOneIndex,
       phaseOneLocked,
+      phaseOneStats,
       playError,
       playSuccess,
       startPhaseTwo,
     ]
   );
+
+  useEffect(() => {
+    if (faseActual !== 1 || !currentPhaseOneCard || phaseOneLocked) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.repeat) return;
+      const lowerKey = event.key.toLowerCase();
+
+      if (event.key === "ArrowRight" || lowerKey === "d") {
+        event.preventDefault();
+        resolvePhaseOneCard("accept");
+      }
+
+      if (event.key === "ArrowLeft" || lowerKey === "a") {
+        event.preventDefault();
+        resolvePhaseOneCard("discard");
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [currentPhaseOneCard, faseActual, phaseOneLocked, resolvePhaseOneCard]);
 
   useEffect(() => {
     if (faseActual !== 1 || !currentPhaseOneCard || phaseOneLocked) {
@@ -628,6 +682,7 @@ export default function Isla7LaughTale({
       const targetZone = getDropZoneFromPoint(point);
       if (!targetZone || targetZone === "board") return;
 
+      setPhaseTwoHistory((previous) => [...previous, phaseTwoAssignments].slice(-18));
       const nextAssignments = placeRequirement(phaseTwoAssignments, requirementId, targetZone);
       const nextUsedBudget = calculateUsedBudget(nextAssignments, requisitosFiltrados);
 
@@ -658,6 +713,22 @@ export default function Isla7LaughTale({
     },
     [getDropZoneFromPoint, loseIntegrity, phaseTwoAssignments, playClick, playError, requisitosFiltrados, resetPhaseTwoState]
   );
+
+  const undoPhaseTwoMove = useCallback(() => {
+    if (phaseTwoHistory.length === 0) {
+      playError?.();
+      setPhaseTwoFeedback("No hay movimientos para deshacer en la balanza.");
+      return;
+    }
+
+    const previousAssignments = phaseTwoHistory[phaseTwoHistory.length - 1];
+    setPhaseTwoHistory((previous) => previous.slice(0, -1));
+    setPhaseTwoAssignments(previousAssignments);
+    setPhaseTwoReview({});
+    setBudgetCollapsed(false);
+    setPhaseTwoFeedback("Deshiciste el ultimo movimiento. Revisa de nuevo la carga del barco.");
+    playClick?.();
+  }, [phaseTwoHistory, playClick, playError]);
 
   const validatePhaseTwo = useCallback(() => {
     if (phaseTwoAssignments.unclassified.length > 0) {
@@ -783,6 +854,19 @@ export default function Isla7LaughTale({
     ]
   );
 
+  const undoPhaseThreeConnection = useCallback(() => {
+    if (phaseThreeConnections.length === 0) {
+      playError?.();
+      setPhaseThreeFeedback("Aun no hay cables para retirar del circuito.");
+      return;
+    }
+
+    setPhaseThreeConnections((previous) => previous.slice(0, -1));
+    setActiveNodeId(null);
+    setPhaseThreeFeedback("Retiraste el ultimo cable. Puedes reconectar ese tramo.");
+    playClick?.();
+  }, [phaseThreeConnections.length, playClick, playError]);
+
   const activeDraftLine = useMemo(() => {
     if (!activeNodeId || !nodePositions[activeNodeId]) return null;
     return {
@@ -793,6 +877,10 @@ export default function Isla7LaughTale({
 
   const traceCompletionPercent = requiredTraceKeys.length
     ? Math.round((phaseThreeConnections.length / requiredTraceKeys.length) * 100)
+    : 0;
+
+  const phaseOneAccuracy = phaseOneStats.total
+    ? Math.round((phaseOneStats.correct / phaseOneStats.total) * 100)
     : 0;
 
   const renderRequirementCard = (requirementId) => {
@@ -913,7 +1001,7 @@ export default function Isla7LaughTale({
                 </div>
                 <h3 className="mt-4 text-3xl font-black uppercase text-amber-50">Repara el One Spec fragmentado</h3>
                 <p className="mt-4 text-sm font-semibold leading-7 text-amber-100/85">
-                  Laugh Tale ya no es una pantalla final vacia. Es el examen integrador donde pondras a prueba tres habilidades: detectar requisitos validos, priorizarlos sin romper el proyecto y cerrar la trazabilidad de extremo a extremo.
+                  En Laugh Tale pondrás a prueba tres habilidades: detectar requisitos validos, priorizarlos sin romper el proyecto y cerrar la trazabilidad de extremo a extremo.
                 </p>
                 <div className="mt-6 grid gap-3 md:grid-cols-3">
                   <div className="rounded-2xl border border-sky-400/30 bg-sky-500/10 p-4">
@@ -990,6 +1078,24 @@ export default function Isla7LaughTale({
                   {phaseOneFeedback.text}
                 </div>
 
+                <div className="mt-4 rounded-2xl border border-cyan-400/25 bg-cyan-500/10 p-4 text-xs font-semibold text-cyan-50/90">
+                  <p className="font-black uppercase tracking-[0.14em] text-cyan-100">Guia rapida del QUE</p>
+                  <ul className="mt-2 space-y-1">
+                    <li>• Describe comportamiento esperado, no tecnologia.</li>
+                    <li>• Debe poder validarse con una prueba objetiva.</li>
+                    <li>• Evita terminos ambiguos como "moderno" o "intuitivo".</li>
+                  </ul>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-black uppercase tracking-[0.14em]">
+                  <div className="rounded-xl border border-emerald-400/35 bg-emerald-500/10 px-3 py-2 text-emerald-100">
+                    Precision: {phaseOneAccuracy}%
+                  </div>
+                  <div className="rounded-xl border border-amber-400/35 bg-amber-500/10 px-3 py-2 text-amber-100">
+                    Racha: x{phaseOneStats.streak}
+                  </div>
+                </div>
+
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button
                     type="button"
@@ -1034,9 +1140,13 @@ export default function Isla7LaughTale({
                           : "border-amber-300 bg-gradient-to-b from-amber-100 to-yellow-100 text-slate-950"
                     }`}
                   >
-                    <p className="text-xs font-black uppercase tracking-[0.22em] text-amber-900">Fragmento del One Spec</p>
-                    <p className="mt-5 text-2xl font-black leading-snug text-slate-950">{currentPhaseOneCard.text}</p>
-                    <div className="mt-8 flex flex-wrap items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em] text-slate-700">
+                    <p className={`text-xs font-black uppercase tracking-[0.22em] ${phaseOneFeedback.tone === "neutral" || !phaseOneLocked ? "text-amber-900" : "text-slate-50/90"}`}>
+                      Fragmento del One Spec
+                    </p>
+                    <p className={`mt-5 text-2xl font-black leading-snug ${phaseOneFeedback.tone === "neutral" || !phaseOneLocked ? "text-slate-950" : "text-slate-50"}`}>
+                      {currentPhaseOneCard.text}
+                    </p>
+                    <div className={`mt-8 flex flex-wrap items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em] ${phaseOneFeedback.tone === "neutral" || !phaseOneLocked ? "text-slate-700" : "text-slate-200"}`}>
                       <span>Izquierda: descartar</span>
                       <span>Derecha: aceptar</span>
                     </div>
@@ -1098,13 +1208,22 @@ export default function Isla7LaughTale({
                     {phaseTwoFeedback}
                   </p>
 
-                  <button
-                    type="button"
-                    onClick={validatePhaseTwo}
-                    className="mt-5 rounded-xl border-2 border-amber-400 bg-gradient-to-r from-yellow-400 to-amber-500 px-5 py-3 text-sm font-black uppercase tracking-[0.12em] text-slate-950 transition hover:-translate-y-0.5 hover:brightness-105"
-                  >
-                    Validar priorizacion
-                  </button>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={validatePhaseTwo}
+                      className="rounded-xl border-2 border-amber-400 bg-gradient-to-r from-yellow-400 to-amber-500 px-5 py-3 text-sm font-black uppercase tracking-[0.12em] text-slate-950 transition hover:-translate-y-0.5 hover:brightness-105"
+                    >
+                      Validar priorizacion
+                    </button>
+                    <button
+                      type="button"
+                      onClick={undoPhaseTwoMove}
+                      className="rounded-xl border-2 border-cyan-400 bg-cyan-500/15 px-5 py-3 text-sm font-black uppercase tracking-[0.12em] text-cyan-100 transition hover:bg-cyan-500/25"
+                    >
+                      Deshacer ultimo
+                    </button>
+                  </div>
                 </div>
 
                 <div className="rounded-3xl border border-slate-700 bg-slate-900/70 p-5">
@@ -1191,6 +1310,14 @@ export default function Isla7LaughTale({
                   <div className="mt-5 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
                     Cables fijados: {phaseThreeConnections.length}/{requiredTraceKeys.length}
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={undoPhaseThreeConnection}
+                    className="mt-5 rounded-xl border-2 border-cyan-400 bg-cyan-500/15 px-5 py-3 text-sm font-black uppercase tracking-[0.12em] text-cyan-100 transition hover:bg-cyan-500/25"
+                  >
+                    Retirar ultimo cable
+                  </button>
                 </div>
 
                 <div
@@ -1309,6 +1436,25 @@ export default function Isla7LaughTale({
               <p className="mx-auto mt-4 max-w-3xl text-base font-semibold text-emerald-50/85">
                 Reconstruiste el One Spec detectando requisitos validos, equilibrando el backlog y cerrando la trazabilidad completa del producto.
               </p>
+
+              <div className="mx-auto mt-7 grid max-w-4xl gap-3 text-left sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-2xl border border-emerald-300/25 bg-slate-950/50 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-200">Precision Fase 1</p>
+                  <p className="mt-2 text-2xl font-black text-emerald-50">{phaseOneAccuracy}%</p>
+                </div>
+                <div className="rounded-2xl border border-amber-300/25 bg-slate-950/50 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-200">Aciertos</p>
+                  <p className="mt-2 text-2xl font-black text-amber-50">{phaseOneStats.correct}</p>
+                </div>
+                <div className="rounded-2xl border border-rose-300/25 bg-slate-950/50 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-rose-200">Errores</p>
+                  <p className="mt-2 text-2xl font-black text-rose-50">{phaseOneStats.wrong}</p>
+                </div>
+                <div className="rounded-2xl border border-cyan-300/25 bg-slate-950/50 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-200">Integridad final</p>
+                  <p className="mt-2 text-2xl font-black text-cyan-50">{integridadPoneglyph}%</p>
+                </div>
+              </div>
 
               <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <button

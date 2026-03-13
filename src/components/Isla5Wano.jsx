@@ -73,7 +73,7 @@ const REQUIREMENTS = [
   },
 ];
 
-export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick }) {
+export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, playError, playSuccess }) {
   const [resolvedMap, setResolvedMap] = useState(() =>
     REQUIREMENTS.reduce((acc, req) => ({ ...acc, [req.id]: false }), {})
   );
@@ -131,6 +131,7 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick }
   const handleSlice = (requirement) => {
     if (outcome || resolvedMap[requirement.id]) return;
 
+    playSuccess?.();
     setSlicedWordId(requirement.id);
     setResolvedMap((prev) => ({ ...prev, [requirement.id]: true }));
     setScore((prev) => prev + 20);
@@ -147,12 +148,13 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick }
   const handleWrongSlice = useCallback((requirement) => {
     if (outcome || resolvedMap[requirement.id]) return;
 
+    playError?.();
     loseLife();
     setFeedback({
       text: "Tajo errado: esa palabra no era ambigua.",
       color: "#b91c1c",
     });
-  }, [loseLife, outcome, resolvedMap]);
+  }, [loseLife, outcome, playError, resolvedMap]);
 
   const tokenize = useCallback((text) => {
     return text.trim().split(/\s+/).filter(Boolean);
@@ -169,6 +171,15 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick }
     setFeedback({ text: "Activa el Haki de Observacion y revisa el pergamino.", color: "#1d4ed8" });
     setOutcome(null);
   };
+
+  useEffect(() => {
+    if (!outcome) return;
+    if (outcome === "success") {
+      playSuccess?.();
+    } else {
+      playError?.();
+    }
+  }, [outcome, playError, playSuccess]);
 
   return (
     <motion.section

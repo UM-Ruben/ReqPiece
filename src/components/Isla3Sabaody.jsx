@@ -42,7 +42,7 @@ function wrapTextLines(ctx, text, maxWidth) {
   return lines.slice(0, 3);
 }
 
-export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClick }) {
+export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClick, playError, playSuccess }) {
   const canvasRef = useRef(null);
   const animationRef = useRef(0);
   const spawnTimerRef = useRef(0);
@@ -67,7 +67,13 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
     setRunning(false);
     setOutcome(result);
     barrelsRef.current = [];
-  }, []);
+
+    if (result === "success") {
+      playSuccess?.();
+    } else {
+      playError?.();
+    }
+  }, [playError, playSuccess]);
 
   useEffect(() => {
     scoreRef.current = score;
@@ -87,9 +93,11 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
     (barrel) => {
       if (gameEndedRef.current) return;
       if (barrel.tipo === "solucion") {
+        playSuccess?.();
         setScore((prev) => prev + 10);
         showFeedback("¡Buen ojo! Solucion destruida", "#15803d");
       } else {
+        playError?.();
         setScore((prev) => prev - 5);
         setLives((prev) => {
           const next = Math.max(0, prev - 1);
@@ -101,16 +109,18 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
         showFeedback("¡Destruiste un requisito!", "#b91c1c");
       }
     },
-    [finishGame, showFeedback]
+    [finishGame, playError, playSuccess, showFeedback]
   );
 
   const processLanding = useCallback(
     (barrel) => {
       if (gameEndedRef.current) return;
       if (barrel.tipo === "problema") {
+        playSuccess?.();
         setScore((prev) => prev + 10);
         showFeedback("¡Requisito salvado!", "#15803d");
       } else {
+        playError?.();
         setScore((prev) => prev - 5);
         setLives((prev) => {
           const next = Math.max(0, prev - 1);
@@ -122,7 +132,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
         showFeedback("¡Contaminaste el diseno!", "#b91c1c");
       }
     },
-    [finishGame, showFeedback]
+    [finishGame, playError, playSuccess, showFeedback]
   );
 
   useEffect(() => {

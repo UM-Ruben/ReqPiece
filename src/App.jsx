@@ -383,6 +383,7 @@ export default function App() {
                   setUnlockedIslands((prev) => ({ ...prev, isla3: true }));
                   setCurrentScreen("menu");
                 }}
+                playClick={playClick}
                 playError={playError}
                 playSuccess={playSuccess}
               />
@@ -410,6 +411,8 @@ export default function App() {
                   setCurrentScreen("menu");
                 }}
                 playClick={playClick}
+                playError={playError}
+                playSuccess={playSuccess}
               />
             )}
           </motion.div>
@@ -435,6 +438,8 @@ export default function App() {
                   setCurrentScreen("menu");
                 }}
                 playClick={playClick}
+                playError={playError}
+                playSuccess={playSuccess}
               />
             )}
           </motion.div>
@@ -460,6 +465,8 @@ export default function App() {
                   setCurrentScreen("menu");
                 }}
                 playClick={playClick}
+                playError={playError}
+                playSuccess={playSuccess}
               />
             )}
           </motion.div>
