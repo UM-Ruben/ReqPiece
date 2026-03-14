@@ -1,39 +1,22 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, Reorder } from "framer-motion";
 import { AlertTriangle, ArrowDown, CheckCircle2, Compass, GripVertical, Heart, Map } from "lucide-react";
 import imageFail from "../image/isla1Fallo.png";
 import imageSuccess from "../image/isla1Acierto.png";
 
-const CORRECT_ORDER = ["Obtencion", "Analisis", "Especificacion", "Validacion"];
-const DISPLAY_LABELS = {
-  Obtencion: "Obtención",
-  Analisis: "Análisis",
-  Especificacion: "Especificación",
-  Validacion: "Validación",
-};
-const PHASE_DESCRIPTIONS = {
-  Obtencion: "Recopilar necesidades del cliente",
-  Analisis: "Estudiar viabilidad y conflictos",
-  Especificacion: "Documentar requisitos formalmente",
-  Validacion: "Confirmar que los requisitos son correctos",
-};
 const MAX_LIVES = 3;
 
-function shuffle(array) {
-  const copied = [...array];
-  for (let i = copied.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copied[i], copied[j]] = [copied[j], copied[i]];
+async function parseLoguetownResponse(response) {
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
   }
-  return copied;
-}
-
-function getShuffledOrder() {
-  let shuffled = shuffle(CORRECT_ORDER);
-  while (shuffled.every((phase, index) => phase === CORRECT_ORDER[index])) {
-    shuffled = shuffle(CORRECT_ORDER);
+  if (!response.ok) {
+    throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
   }
-  return shuffled;
+  return payload;
 }
 
 export default function Isla1Loguetown({
@@ -43,66 +26,84 @@ export default function Isla1Loguetown({
   playError,
   playSuccess,
 }) {
-  const initialCards = useMemo(() => getShuffledOrder(), []);
-  const [cards, setCards] = useState(initialCards);
+  const [cards, setCards] = useState([]);
   const [lives, setLives] = useState(MAX_LIVES);
   const [result, setResult] = useState({ type: null, message: "" });
   const [outcome, setOutcome] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLocked, setIsLocked] = useState(false);
+  const [requestError, setRequestError] = useState("");
 
-  // handle attempt to check current order
-  const checkOrder = () => {
-    if (outcome) return;
-
-    playClick();
-
-    const isCorrect = cards.every((card, index) => card === CORRECT_ORDER[index]);
-
-    if (isCorrect) {
-      playSuccess();
-      setOutcome("success");
-      setResult({
-        type: "success",
-        message: "¡Has ordenado los mapas correctamente! Rumbo a la Isla 2...",
-      });
-      return;
+  const startGame = async () => {
+    setIsLoading(true);
+    setIsLocked(true);
+    setRequestError("");
+    try {
+      const response = await fetch("/api/loguetown/start", { method: "POST" });
+      const data = await parseLoguetownResponse(response);
+      setCards(data.phases);
+      setLives(data.lives);
+      setOutcome(null);
+      setResult({ type: null, message: "" });
+    } catch (error) {
+      setRequestError(error.message);
+    } finally {
+      setIsLoading(false);
+      setIsLocked(false);
     }
-
-    playError();
-
-    const nextLives = lives - 1;
-    setLives(nextLives);
-
-    if (nextLives <= 0) {
-      setOutcome("failure");
-      setResult({
-        type: "error",
-        message:
-          "¡Cuidado capitán! Hemos chocado contra un arrecife. Nos hemos quedado sin vidas en esta travesía.",
-      });
-      return;
-    }
-
-    setResult({
-      type: "error",
-      message:
-        `¡Cuidado capitán! Hemos chocado contra un arrecife. Nos quedan ${nextLives} vidas.`,
-    });
   };
 
+  useEffect(() => {
+    startGame();
+  }, []);
 
-  // reinitialize everything: shuffle cards and reset lives/outcome
+  const checkOrder = async () => {
+    if (outcome || isLocked || isLoading) return;
+    playClick();
+    setIsLocked(true);
+    try {
+      const response = await fetch("/api/loguetown/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: cards.map((p) => p.id) }),
+      });
+      const data = await parseLoguetownResponse(response);
+      setLives(data.lives);
+      if (data.correct) {
+        playSuccess();
+        setOutcome("success");
+        setResult({ type: "success", message: data.feedback });
+      } else if (data.status === "failure") {
+        playError();
+        setOutcome("failure");
+        setResult({ type: "error", message: data.feedback });
+      } else {
+        playError();
+        setResult({ type: "error", message: data.feedback });
+      }
+    } catch (error) {
+      setRequestError(error.message);
+    } finally {
+      setIsLocked(false);
+    }
+  };
+
   const resetIsland = () => {
     playClick();
-    setCards(getShuffledOrder());
-    setLives(MAX_LIVES);
-    setOutcome(null);
-    setResult({ type: null, message: "" });
+    startGame();
   };
 
-  // only shuffle cards without affecting lives or current outcome
   const shuffleCards = () => {
+    if (outcome || isLocked || isLoading) return;
     playClick();
-    setCards(getShuffledOrder());
+    setCards((prev) => {
+      const copied = [...prev];
+      for (let i = copied.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copied[i], copied[j]] = [copied[j], copied[i]];
+      }
+      return copied;
+    });
   };
 
   return (
@@ -131,6 +132,12 @@ export default function Isla1Loguetown({
         </button>
       </div>
 
+      {requestError && (
+        <div className="mb-4 rounded-lg border border-red-300/70 bg-red-200/40 px-4 py-2 text-center text-xs font-semibold text-red-900">
+          {requestError}
+        </div>
+      )}
+
       <div className="mb-4 flex items-center justify-center gap-2 rounded-xl border-2 border-amber-300/80 bg-amber-100 px-4 py-2 text-blue-950">
         <span className="text-sm font-bold uppercase tracking-[0.15em]">Vidas:</span>
         {Array.from({ length: MAX_LIVES }).map((_, index) => (
@@ -147,6 +154,10 @@ export default function Isla1Loguetown({
           ↕ Arrastra para reordenar de primera a última fase
         </p>
 
+        {isLoading && (
+          <p className="py-6 text-center text-sm font-semibold text-amber-300/70">Cargando minijuego...</p>
+        )}
+
         <div className="max-h-[44vh] overflow-y-auto pr-1 sm:max-h-[48vh] md:max-h-[52vh]">
           <Reorder.Group
             axis="y"
@@ -156,7 +167,7 @@ export default function Isla1Loguetown({
           >
             {cards.map((phase, index) => (
               <Reorder.Item
-                key={phase}
+                key={phase.id}
                 value={phase}
                 whileDrag={{
                   scale: 1.03,
@@ -182,10 +193,10 @@ export default function Isla1Loguetown({
                     <Map className="h-5 w-5 shrink-0 text-amber-900" />
                     <div className="min-w-0">
                       <p className="truncate text-lg font-extrabold leading-tight text-blue-950">
-                        {DISPLAY_LABELS[phase]}
+                        {phase.label}
                       </p>
                       <p className="truncate text-xs font-medium text-blue-900/60">
-                        {PHASE_DESCRIPTIONS[phase]}
+                        {phase.description}
                       </p>
                     </div>
                   </div>
@@ -207,7 +218,7 @@ export default function Isla1Loguetown({
           <button
             type="button"
             onClick={checkOrder}
-            disabled={Boolean(outcome)}
+            disabled={Boolean(outcome) || isLocked || isLoading}
             className="w-full rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 px-8 py-4 text-xl font-black uppercase tracking-[0.1em] text-blue-950 shadow-[0_10px_20px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5 hover:brightness-105 sm:w-auto"
           >
             ¡Zarpar!
@@ -216,7 +227,7 @@ export default function Isla1Loguetown({
           <button
             type="button"
             onClick={shuffleCards}
-            disabled={Boolean(outcome)}
+            disabled={Boolean(outcome) || isLocked || isLoading}
             className="rounded-xl border-2 border-amber-300 bg-transparent px-4 py-2 text-sm font-bold uppercase tracking-wide text-amber-100 transition hover:bg-amber-200/10"
           >
             Barajar de nuevo

@@ -4,6 +4,11 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import session from "express-session";
 import { MAX_LIVES, WATER7_DIALOGS } from "./water7Dialogs.js";
+import {
+  LOGUETOWN_PHASES,
+  LOGUETOWN_CORRECT_ORDER,
+  LOGUETOWN_MAX_LIVES,
+} from "./loguetownData.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -142,6 +147,86 @@ app.post("/api/water7/answer", (req, res) => {
   return res.json({
     correct: false,
     ...buildGamePayload(game, `¡Respuesta incorrecta! Te quedan ${game.lives} vidas. Inténtalo de nuevo.`),
+  });
+});
+
+// ── Isla 1: Loguetown ─────────────────────────────────────────────────────
+
+function initLoguetownGame(sessionObj) {
+  sessionObj.loguetown = {
+    lives: LOGUETOWN_MAX_LIVES,
+    status: "in_progress",
+  };
+}
+
+function getOrCreateLoguetownGame(req) {
+  if (!req.session.loguetown) initLoguetownGame(req.session);
+  return req.session.loguetown;
+}
+
+function shuffledPublicPhases() {
+  return shuffle(LOGUETOWN_PHASES.map(({ id, label, description }) => ({ id, label, description })));
+}
+
+app.post("/api/loguetown/start", (req, res) => {
+  initLoguetownGame(req.session);
+  const game = req.session.loguetown;
+  res.json({
+    status: game.status,
+    lives: game.lives,
+    phases: shuffledPublicPhases(),
+    feedback: "Arrastra las tarjetas para ordenar las fases.",
+  });
+});
+
+app.post("/api/loguetown/check", (req, res) => {
+  const game = getOrCreateLoguetownGame(req);
+
+  if (game.status !== "in_progress") {
+    return res.status(409).json({ error: "La partida ya terminó. Inicia una nueva para continuar." });
+  }
+
+  const { order } = req.body || {};
+  const validIds = new Set(LOGUETOWN_CORRECT_ORDER);
+
+  if (
+    !Array.isArray(order) ||
+    order.length !== LOGUETOWN_CORRECT_ORDER.length ||
+    !order.every((id) => typeof id === "string" && validIds.has(id))
+  ) {
+    return res.status(400).json({ error: "El orden enviado no es válido." });
+  }
+
+  const isCorrect = order.every((id, i) => id === LOGUETOWN_CORRECT_ORDER[i]);
+
+  if (isCorrect) {
+    game.status = "victory";
+    return res.json({
+      correct: true,
+      status: game.status,
+      lives: game.lives,
+      feedback: "¡Has ordenado los mapas correctamente! Rumbo a la Isla 2...",
+    });
+  }
+
+  game.lives -= 1;
+
+  if (game.lives <= 0) {
+    game.status = "failure";
+    game.lives = 0;
+    return res.json({
+      correct: false,
+      status: game.status,
+      lives: game.lives,
+      feedback: "¡Cuidado capitán! Hemos chocado contra un arrecife. Nos hemos quedado sin vidas en esta travesía.",
+    });
+  }
+
+  return res.json({
+    correct: false,
+    status: game.status,
+    lives: game.lives,
+    feedback: `¡Cuidado capitán! Hemos chocado contra un arrecife. Nos quedan ${game.lives} vidas.`,
   });
 });
 
