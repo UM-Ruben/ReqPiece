@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import express from "express";
 import session from "express-session";
@@ -9,6 +10,12 @@ import {
   LOGUETOWN_CORRECT_ORDER,
   LOGUETOWN_MAX_LIVES,
 } from "./loguetownData.js";
+import {
+  SABAODY_BARREL_POOL,
+  SABAODY_GAME_TIME_SECONDS,
+  SABAODY_MAX_LIVES,
+  SABAODY_MIN_SCORE_TO_WIN,
+} from "./sabaodyData.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -228,6 +235,151 @@ app.post("/api/loguetown/check", (req, res) => {
     lives: game.lives,
     feedback: `¡Cuidado capitán! Hemos chocado contra un arrecife. Nos quedan ${game.lives} vidas.`,
   });
+});
+
+// ── Isla 3: Sabaody ───────────────────────────────────────────────────────
+
+function randomSabaodyEntry() {
+  return SABAODY_BARREL_POOL[Math.floor(Math.random() * SABAODY_BARREL_POOL.length)];
+}
+
+function initSabaodyGame(sessionObj) {
+  sessionObj.sabaody = {
+    score: 0,
+    lives: SABAODY_MAX_LIVES,
+    status: "in_progress",
+    barrels: {},
+    retryBarrels: [],
+  };
+}
+
+function getOrCreateSabaodyGame(req) {
+  if (!req.session.sabaody) initSabaodyGame(req.session);
+  return req.session.sabaody;
+}
+
+function saabodyStatePayload(game, extra = {}) {
+  return {
+    status: game.status,
+    score: game.score,
+    lives: game.lives,
+    gameTimeSeconds: SABAODY_GAME_TIME_SECONDS,
+    minScoreToWin: SABAODY_MIN_SCORE_TO_WIN,
+    ...extra,
+  };
+}
+
+app.post("/api/sabaody/start", (req, res) => {
+  initSabaodyGame(req.session);
+  const game = req.session.sabaody;
+  res.json(
+    saabodyStatePayload(game, {
+      feedback: "Comienza la ronda: dispara solo a barriles de solucion.",
+      feedbackTone: "neutral",
+    })
+  );
+});
+
+app.post("/api/sabaody/spawn", (req, res) => {
+  const game = getOrCreateSabaodyGame(req);
+
+  if (game.status !== "in_progress") {
+    return res.status(409).json({
+      error: "La partida ya terminó. Inicia una nueva para continuar.",
+      ...saabodyStatePayload(game),
+    });
+  }
+
+  // Reinsert missed solution barrels before pulling new random ones.
+  const barrelEntry = game.retryBarrels.length > 0 ? game.retryBarrels.shift() : randomSabaodyEntry();
+  const barrelId = crypto.randomUUID();
+  game.barrels[barrelId] = {
+    tipo: barrelEntry.tipo,
+    texto: barrelEntry.texto,
+  };
+
+  return res.json(
+    saabodyStatePayload(game, {
+      barrel: {
+        id: barrelId,
+        texto: barrelEntry.texto,
+      },
+    })
+  );
+});
+
+app.post("/api/sabaody/event", (req, res) => {
+  const game = getOrCreateSabaodyGame(req);
+
+  if (game.status !== "in_progress") {
+    return res.status(409).json({
+      error: "La partida ya terminó. Inicia una nueva para continuar.",
+      ...saabodyStatePayload(game),
+    });
+  }
+
+  const { barrelId, eventType } = req.body || {};
+  if (!barrelId || typeof barrelId !== "string") {
+    return res.status(400).json({ error: "barrelId es obligatorio." });
+  }
+  if (eventType !== "hit" && eventType !== "land") {
+    return res.status(400).json({ error: "eventType debe ser 'hit' o 'land'." });
+  }
+
+  const barrelType = game.barrels[barrelId];
+  if (!barrelType) {
+    return res.status(404).json({ error: "Barril no encontrado o ya procesado." });
+  }
+  const barrelInfo = barrelType;
+  const barrelKind = barrelInfo.tipo;
+  delete game.barrels[barrelId];
+
+  let feedback = "";
+  let feedbackTone = "neutral";
+
+  if (eventType === "hit") {
+    if (barrelKind === "solucion") {
+      game.score += 10;
+      feedback = "¡Buen ojo! Solucion destruida";
+      feedbackTone = "success";
+    } else {
+      game.score -= 5;
+      game.lives -= 1;
+      feedback = "¡Destruiste un requisito!";
+      feedbackTone = "error";
+    }
+  } else if (barrelKind === "problema") {
+    game.score += 10;
+    feedback = "";
+    feedbackTone = "neutral";
+  } else {
+    // If a solution barrel reaches the deck, recycle it to appear again later.
+    game.retryBarrels.push(barrelInfo);
+    feedback = "";
+    feedbackTone = "neutral";
+  }
+
+  if (game.lives <= 0) {
+    game.lives = 0;
+    game.status = "failure";
+  }
+
+  return res.json(
+    saabodyStatePayload(game, {
+      feedback,
+      feedbackTone,
+    })
+  );
+});
+
+app.post("/api/sabaody/finalize", (req, res) => {
+  const game = getOrCreateSabaodyGame(req);
+
+  if (game.status === "in_progress") {
+    game.status = game.score >= SABAODY_MIN_SCORE_TO_WIN ? "victory" : "failure";
+  }
+
+  res.json(saabodyStatePayload(game));
 });
 
 if (fs.existsSync(DIST_DIR)) {

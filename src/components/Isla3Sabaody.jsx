@@ -4,24 +4,9 @@ import { Compass } from "lucide-react";
 import imageFail from "../image/isla3Fallo.png";
 import imageSuccess from "../image/isla3Acierto.png";
 
-const GAME_TIME_SECONDS = 45;
+const DEFAULT_GAME_TIME_SECONDS = 45;
 const MAX_LIVES = 3;
-const MIN_SCORE_TO_WIN = 30;
-
-const BARREL_POOL = [
-  { texto: "Restringir el acceso a personal no autorizado", tipo: "problema" },
-  { texto: "El sistema debe permitir recuperar contraseñas", tipo: "problema" },
-  { texto: "Reducir tiempos de espera en hora pico", tipo: "problema" },
-  { texto: "Usar un escaner de retina Sony X90", tipo: "solucion" },
-  { texto: "Implementar microservicios con Kubernetes", tipo: "solucion" },
-  { texto: "Guardar datos en PostgreSQL version 17", tipo: "solucion" },
-  { texto: "Garantizar trazabilidad de cambios", tipo: "problema" },
-  { texto: "Aplicar OAuth2 con proveedor externo", tipo: "solucion" },
-];
-
-function randomFromPool() {
-  return BARREL_POOL[Math.floor(Math.random() * BARREL_POOL.length)];
-}
+const DEFAULT_MIN_SCORE_TO_WIN = 30;
 
 function wrapTextLines(ctx, text, maxWidth) {
   const words = text.split(" ");
@@ -42,6 +27,21 @@ function wrapTextLines(ctx, text, maxWidth) {
   return lines.slice(0, 3);
 }
 
+async function parseApiResponse(response) {
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
+  }
+
+  return payload;
+}
+
 export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClick, playError, playSuccess }) {
   const canvasRef = useRef(null);
   const animationRef = useRef(0);
@@ -50,13 +50,22 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
   const barrelsRef = useRef([]);
   const lastFrameTimeRef = useRef(0);
   const scoreRef = useRef(0);
+  const livesRef = useRef(MAX_LIVES);
+  const minScoreRef = useRef(DEFAULT_MIN_SCORE_TO_WIN);
   const gameEndedRef = useRef(false);
+  const spawnInFlightRef = useRef(false);
+  const processingEventRef = useRef(false);
+  const pendingEventsRef = useRef([]);
   const crosshairRef = useRef({ x: 450, y: 260 });
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(GAME_TIME_SECONDS);
+  const [timeLeft, setTimeLeft] = useState(DEFAULT_GAME_TIME_SECONDS);
+  const [gameTimeSeconds, setGameTimeSeconds] = useState(DEFAULT_GAME_TIME_SECONDS);
+  const [minScoreToWin, setMinScoreToWin] = useState(DEFAULT_MIN_SCORE_TO_WIN);
   const [lives, setLives] = useState(MAX_LIVES);
-  const [running, setRunning] = useState(true);
+  const [running, setRunning] = useState(false);
   const [outcome, setOutcome] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [requestError, setRequestError] = useState("");
   const [feedback, setFeedback] = useState({ text: "", color: "#16a34a" });
 
   const deckY = 500;
@@ -79,6 +88,14 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
     scoreRef.current = score;
   }, [score]);
 
+  useEffect(() => {
+    livesRef.current = lives;
+  }, [lives]);
+
+  useEffect(() => {
+    minScoreRef.current = minScoreToWin;
+  }, [minScoreToWin]);
+
   const showFeedback = useCallback((text, color) => {
     setFeedback({ text, color });
     if (feedbackTimeoutRef.current) {
@@ -89,51 +106,138 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
     }, 900);
   }, []);
 
-  const processHit = useCallback(
-    (barrel) => {
-      if (gameEndedRef.current) return;
-      if (barrel.tipo === "solucion") {
-        playSuccess?.();
-        setScore((prev) => prev + 10);
-        showFeedback("¡Buen ojo! Solucion destruida", "#15803d");
-      } else {
-        playError?.();
-        setScore((prev) => prev - 5);
-        setLives((prev) => {
-          const next = Math.max(0, prev - 1);
-          if (next <= 0) {
-            finishGame("failure");
-          }
-          return next;
+  const flushEventsQueue = useCallback(async () => {
+    if (processingEventRef.current) return;
+    processingEventRef.current = true;
+
+    while (pendingEventsRef.current.length > 0 && !gameEndedRef.current) {
+      const nextEvent = pendingEventsRef.current.shift();
+      if (!nextEvent) break;
+
+      try {
+        const response = await fetch("/api/sabaody/event", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(nextEvent),
         });
-        showFeedback("¡Destruiste un requisito!", "#b91c1c");
+        const data = await parseApiResponse(response);
+
+        setScore(data.score);
+        setLives(data.lives);
+
+        // Only shots (hit) should emit feedback/audio. Landing events stay silent.
+        if (nextEvent.eventType === "hit") {
+          if (data.feedbackTone === "success") {
+            playSuccess?.();
+            showFeedback(data.feedback, "#15803d");
+          } else if (data.feedbackTone === "error") {
+            playError?.();
+            showFeedback(data.feedback, "#b91c1c");
+          }
+        }
+
+        if (data.status === "failure") {
+          finishGame("failure");
+        }
+      } catch (error) {
+        setRequestError(error.message);
       }
+    }
+
+    processingEventRef.current = false;
+  }, [finishGame, playError, playSuccess, showFeedback]);
+
+  const enqueueBarrelEvent = useCallback(
+    (barrelId, eventType) => {
+      if (gameEndedRef.current) return;
+      pendingEventsRef.current.push({ barrelId, eventType });
+      void flushEventsQueue();
     },
-    [finishGame, playError, playSuccess, showFeedback]
+    [flushEventsQueue]
   );
 
-  const processLanding = useCallback(
-    (barrel) => {
-      if (gameEndedRef.current) return;
-      if (barrel.tipo === "problema") {
-        playSuccess?.();
-        setScore((prev) => prev + 10);
-        showFeedback("¡Requisito salvado!", "#15803d");
-      } else {
-        playError?.();
-        setScore((prev) => prev - 5);
-        setLives((prev) => {
-          const next = Math.max(0, prev - 1);
-          if (next <= 0) {
-            finishGame("failure");
-          }
-          return next;
-        });
-        showFeedback("¡Contaminaste el diseno!", "#b91c1c");
-      }
-    },
-    [finishGame, playError, playSuccess, showFeedback]
-  );
+  const spawnBarrel = useCallback(async () => {
+    if (spawnInFlightRef.current || gameEndedRef.current || !running || outcome) return;
+    spawnInFlightRef.current = true;
+    try {
+      const response = await fetch("/api/sabaody/spawn", {
+        method: "POST",
+      });
+      const data = await parseApiResponse(response);
+      const spawned = data.barrel;
+      if (!spawned) return;
+
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const width = 190;
+      const height = 62;
+      barrelsRef.current.push({
+        id: spawned.id,
+        texto: spawned.texto,
+        x: 90 + Math.random() * (canvas.width - 180 - width),
+        y: 30 + Math.random() * 80,
+        w: width,
+        h: height,
+        vx: (Math.random() - 0.5) * 20,
+        vy: 48 + Math.random() * 22,
+      });
+    } catch (error) {
+      setRequestError(error.message);
+    } finally {
+      spawnInFlightRef.current = false;
+    }
+  }, [outcome, running]);
+
+  const finalizeRound = useCallback(async () => {
+    try {
+      const response = await fetch("/api/sabaody/finalize", {
+        method: "POST",
+      });
+      const data = await parseApiResponse(response);
+      setScore(data.score);
+      setLives(data.lives);
+      finishGame(data.status === "victory" ? "success" : "failure");
+    } catch (error) {
+      setRequestError(error.message);
+      finishGame(scoreRef.current >= minScoreRef.current ? "success" : "failure");
+    }
+  }, [finishGame]);
+
+  const startGame = useCallback(async () => {
+    setIsLoading(true);
+    setRequestError("");
+    try {
+      const response = await fetch("/api/sabaody/start", {
+        method: "POST",
+      });
+      const data = await parseApiResponse(response);
+
+      setScore(data.score);
+      setLives(data.lives);
+      setMinScoreToWin(data.minScoreToWin || DEFAULT_MIN_SCORE_TO_WIN);
+      setGameTimeSeconds(data.gameTimeSeconds || DEFAULT_GAME_TIME_SECONDS);
+      setTimeLeft(data.gameTimeSeconds || DEFAULT_GAME_TIME_SECONDS);
+      setOutcome(null);
+      setFeedback({ text: "", color: "#16a34a" });
+      setRunning(true);
+      gameEndedRef.current = false;
+      barrelsRef.current = [];
+      pendingEventsRef.current = [];
+      spawnTimerRef.current = 0;
+      lastFrameTimeRef.current = 0;
+      crosshairRef.current = { x: 450, y: 260 };
+    } catch (error) {
+      setRequestError(error.message);
+      setRunning(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void startGame();
+  }, [startGame]);
 
   useEffect(() => {
     if (!running || outcome) return;
@@ -141,7 +245,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
       setTimeLeft((prev) => {
         if (prev <= 1) {
           window.clearInterval(timer);
-          finishGame(scoreRef.current >= MIN_SCORE_TO_WIN ? "success" : "failure");
+          void finalizeRound();
           return 0;
         }
         return prev - 1;
@@ -149,7 +253,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [finishGame, outcome, running]);
+  }, [finalizeRound, outcome, running]);
 
   useEffect(() => {
     return () => {
@@ -164,23 +268,6 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
     if (!canvas) return undefined;
     const ctx = canvas.getContext("2d");
     if (!ctx) return undefined;
-
-    const createBarrel = () => {
-      const base = randomFromPool();
-      const width = 190;
-      const height = 62;
-      barrelsRef.current.push({
-        id: crypto.randomUUID(),
-        texto: base.texto,
-        tipo: base.tipo,
-        x: 90 + Math.random() * (canvas.width - 180 - width),
-        y: 30 + Math.random() * 80,
-        w: width,
-        h: height,
-        vx: (Math.random() - 0.5) * 20,
-        vy: 48 + Math.random() * 22,
-      });
-    };
 
     const drawScene = (timestamp) => {
       const deltaMs = lastFrameTimeRef.current ? timestamp - lastFrameTimeRef.current : 16;
@@ -217,7 +304,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
         spawnTimerRef.current += dt;
         if (spawnTimerRef.current >= 1.3) {
           spawnTimerRef.current = 0;
-          createBarrel();
+          void spawnBarrel();
         }
       }
 
@@ -229,7 +316,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
         barrel.y += barrel.vy * dt;
 
         if (barrel.y + barrel.h >= deckY) {
-          processLanding(barrel);
+          enqueueBarrelEvent(barrel.id, "land");
           continue;
         }
 
@@ -287,7 +374,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
       window.cancelAnimationFrame(animationRef.current);
       lastFrameTimeRef.current = 0;
     };
-  }, [outcome, processLanding, running]);
+  }, [enqueueBarrelEvent, outcome, running, spawnBarrel]);
 
   const handlePointerMove = useCallback((clientX, clientY) => {
     const canvas = canvasRef.current;
@@ -316,31 +403,21 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
 
     const barrel = barrelsRef.current[hitIndex];
     barrelsRef.current.splice(hitIndex, 1);
-    processHit(barrel);
-  }, [outcome, processHit, running]);
+    enqueueBarrelEvent(barrel.id, "hit");
+  }, [enqueueBarrelEvent, outcome, running]);
 
   const resetIsland = useCallback(() => {
     playClick();
-    setScore(0);
-    setTimeLeft(GAME_TIME_SECONDS);
-    setLives(MAX_LIVES);
-    setFeedback({ text: "", color: "#16a34a" });
-    setOutcome(null);
-    gameEndedRef.current = false;
-    barrelsRef.current = [];
-    spawnTimerRef.current = 0;
-    lastFrameTimeRef.current = 0;
-    crosshairRef.current = { x: 450, y: 260 };
-    setRunning(true);
-  }, [playClick]);
+    void startGame();
+  }, [playClick, startGame]);
 
   const finalMessage = useMemo(() => {
     if (outcome === "failure" && lives <= 0) return "La tripulacion perdio el control de la cubierta.";
     if (outcome === "failure") return "El tiempo acabo y la cubierta no quedo asegurada.";
     if (score >= 90) return "Dominaste el arte de distinguir el QUE del COMO.";
-    if (score >= MIN_SCORE_TO_WIN) return "Buena navegacion, pero aun puedes afinar tu punteria analitica.";
+    if (score >= minScoreToWin) return "Buena navegacion, pero aun puedes afinar tu punteria analitica.";
     return "Necesitas reforzar la diferencia entre requisito y solucion.";
-  }, [lives, outcome, score]);
+  }, [lives, minScoreToWin, outcome, score]);
 
   return (
     <motion.section
@@ -381,6 +458,12 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
         )}
       </div>
 
+      {requestError && (
+        <div className="mt-4 rounded-lg border border-red-300 bg-red-100/80 px-4 py-2 text-sm font-semibold text-red-900">
+          {requestError}
+        </div>
+      )}
+
       <div className="mt-4 overflow-hidden rounded-2xl border-4 border-blue-950/80 bg-sky-950">
         <canvas
           ref={canvasRef}
@@ -400,6 +483,12 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
           }}
         />
       </div>
+
+      {isLoading && (
+        <div className="mt-4 rounded-2xl border-2 border-amber-700 bg-amber-100 p-4">
+          <p className="text-lg font-black uppercase">Cargando partida...</p>
+        </div>
+      )}
 
       {!running && !outcome && (
         <div className="mt-4 rounded-2xl border-2 border-amber-700 bg-amber-100 p-4">
