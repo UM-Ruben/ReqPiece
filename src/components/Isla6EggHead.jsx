@@ -1,178 +1,155 @@
 import { motion } from "framer-motion";
 import { AlertTriangle, Cpu, Database, Link as LinkIcon, ShieldAlert, Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import imageFail from "../image/isla6VegapunkFallo.png";
 import imageSuccess from "../image/isla6VegapunkAcierto.png";
 
-const requirements = [
-  {
-    id: "req-01",
-    code: "REQ-01",
-    name: "Login de usuarios",
-    status: "estable",
-    brief: "Los usuarios deben autenticarse y el sistema debe registrar correctamente los accesos.",
-    affectedArtifacts: ["art-2", "art-4"],
-  },
-  {
-    id: "req-02",
-    code: "REQ-02",
-    name: "Gestion de catalogo",
-    status: "estable",
-    brief: "El catalogo debe poder consultarse y mantenerse desde la capa funcional del sistema.",
-    affectedArtifacts: ["art-4", "art-5"],
-  },
-  {
-    id: "req-03",
-    code: "REQ-03",
-    name: "Checkout seguro",
-    status: "estable",
-    brief: "La compra debe validarse, persistirse y ejecutarse de forma segura de extremo a extremo.",
-    affectedArtifacts: ["art-1", "art-3", "art-5"],
-  },
-  {
-    id: "req-04",
-    code: "REQ-04",
-    name: "Anadir pasarela de pago",
-    status: "modificado",
-    brief: "Se incorpora pago externo, por lo que hay que localizar que partes del sistema cambian realmente.",
-    affectedArtifacts: ["art-1", "art-3", "art-5"],
-  },
-];
+async function parseApiResponse(response) {
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
 
-const artifacts = [
-  {
-    id: "art-1",
-    name: "Componente ShoppingCart.jsx",
-    description: "Gestiona carrito, resumen del pedido y arranque del flujo de compra.",
-  },
-  {
-    id: "art-2",
-    name: "Test de Integracion Auth",
-    description: "Valida autenticacion, sesiones y permisos de acceso.",
-  },
-  {
-    id: "art-3",
-    name: "Tabla DB: Transacciones",
-    description: "Persiste cobros, estados de pago y evidencias de operacion.",
-  },
-  {
-    id: "art-4",
-    name: "Modulo de Perfil de Usuario",
-    description: "Centraliza datos de cuenta, preferencias y datos visibles del usuario.",
-  },
-  {
-    id: "art-5",
-    name: "API: Checkout & Gateway",
-    description: "Orquesta checkout, comunicacion con servicios externos y confirmacion final.",
-  },
-];
+  if (!response.ok) {
+    throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
+  }
 
-const MAX_ERRORS = 3;
-const TOTAL_REQUIRED_LINKS = requirements.reduce((acc, req) => acc + req.affectedArtifacts.length, 0);
-
-function createEmptyLinks() {
-  return requirements.reduce((acc, req) => ({ ...acc, [req.id]: [] }), {});
+  return payload;
 }
 
 export default function Isla6EggHead({ onIslandCompleted, onBackToMenu, playClick, playError, playSuccess }) {
+  const [requirements, setRequirements] = useState([]);
+  const [artifacts, setArtifacts] = useState([]);
   const [selectedReqId, setSelectedReqId] = useState(null);
-  const [linksByReq, setLinksByReq] = useState(createEmptyLinks);
+  const [linksByReq, setLinksByReq] = useState({});
+  const [maxErrors, setMaxErrors] = useState(3);
+  const [totalRequiredLinks, setTotalRequiredLinks] = useState(0);
+  const [completedRequirements, setCompletedRequirements] = useState(0);
+  const [linkedCount, setLinkedCount] = useState(0);
+  const [status, setStatus] = useState("in_progress");
   const [errors, setErrors] = useState(0);
   const [shakeId, setShakeId] = useState(null);
   const [wrongFlashId, setWrongFlashId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [requestError, setRequestError] = useState("");
   const [feedback, setFeedback] = useState("Selecciona un requisito y enlaza sus artefactos como en una matriz DOORS.");
 
-  const linkedCount = useMemo(
-    () => Object.values(linksByReq).reduce((acc, links) => acc + links.length, 0),
-    [linksByReq]
-  );
-
-  const progress = useMemo(() => Math.round((linkedCount / TOTAL_REQUIRED_LINKS) * 100), [linkedCount]);
+  const progress = useMemo(() => {
+    if (totalRequiredLinks <= 0) return 0;
+    return Math.round((linkedCount / totalRequiredLinks) * 100);
+  }, [linkedCount, totalRequiredLinks]);
 
   const selectedRequirement = useMemo(
     () => requirements.find((req) => req.id === selectedReqId) ?? null,
-    [selectedReqId]
+    [requirements, selectedReqId]
   );
 
-  const completedRequirements = useMemo(
-    () => requirements.filter((req) => linksByReq[req.id].length === req.affectedArtifacts.length).length,
-    [linksByReq]
-  );
+  const completed = status === "victory";
+  const gameOver = status === "failure";
 
-  const completed = linkedCount === TOTAL_REQUIRED_LINKS;
-  const gameOver = errors >= MAX_ERRORS;
+  const isLinked = (reqId, artifactId) => (linksByReq[reqId] || []).includes(artifactId);
 
-  const isLinked = (reqId, artifactId) => linksByReq[reqId].includes(artifactId);
+  const applyPayload = useCallback((data) => {
+    setStatus(data.status || "in_progress");
+    setSelectedReqId(data.selectedReqId || null);
+    setLinksByReq(data.linksByReq || {});
+    setErrors(data.errors || 0);
+    setMaxErrors(data.maxErrors || 3);
+    setLinkedCount(data.linkedCount || 0);
+    setCompletedRequirements(data.completedRequirements || 0);
+    setTotalRequiredLinks(data.totalRequiredLinks || 0);
+    setRequirements(data.requirements || []);
+    setArtifacts(data.artifacts || []);
+    setFeedback(data.feedback || "");
+
+    if (data.wrongArtifactId) {
+      setShakeId(data.wrongArtifactId);
+      setWrongFlashId(data.wrongArtifactId);
+      window.setTimeout(() => {
+        setShakeId((prev) => (prev === data.wrongArtifactId ? null : prev));
+        setWrongFlashId((prev) => (prev === data.wrongArtifactId ? null : prev));
+      }, 420);
+    }
+  }, []);
+
+  const startGame = useCallback(async () => {
+    setIsLoading(true);
+    setRequestError("");
+    try {
+      const response = await fetch("/api/egghead/start", {
+        method: "POST",
+      });
+      const data = await parseApiResponse(response);
+      applyPayload(data);
+    } catch (error) {
+      setRequestError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [applyPayload]);
+
+  useEffect(() => {
+    void startGame();
+  }, [startGame]);
+
+  useEffect(() => {
+    if (completed) {
+      playSuccess?.();
+    }
+  }, [completed, playSuccess]);
+
+  useEffect(() => {
+    if (gameOver) {
+      playError?.();
+    }
+  }, [gameOver, playError]);
 
   const resetGame = () => {
     playClick();
-    setSelectedReqId(null);
-    setLinksByReq(createEmptyLinks());
-    setErrors(0);
-    setShakeId(null);
-    setWrongFlashId(null);
-    setFeedback("Selecciona un requisito y enlaza sus artefactos como en una matriz DOORS.");
+    void startGame();
   };
 
-  const selectRequirement = (req) => {
-    if (completed || gameOver) return;
+  const selectRequirement = async (req) => {
+    if (completed || gameOver || isLoading) return;
     playClick();
-    setSelectedReqId(req.id);
-    setFeedback(`${req.code} activo: analiza su descripcion y deduce que artefactos deben actualizarse.`);
+    setRequestError("");
+    try {
+      const response = await fetch("/api/egghead/select", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reqId: req.id }),
+      });
+      const data = await parseApiResponse(response);
+      applyPayload(data);
+    } catch (error) {
+      setRequestError(error.message);
+    }
   };
 
-  const registerError = (artifactId, message) => {
-    playError();
-    setErrors((prev) => prev + 1);
-    setShakeId(artifactId);
-    setWrongFlashId(artifactId);
-    setFeedback(message);
+  const clickArtifact = async (artifact) => {
+    if (completed || gameOver || isLoading) return;
+    setRequestError("");
 
-    window.setTimeout(() => {
-      setShakeId((prev) => (prev === artifactId ? null : prev));
-      setWrongFlashId((prev) => (prev === artifactId ? null : prev));
-    }, 420);
-  };
+    try {
+      const response = await fetch("/api/egghead/artifact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ artifactId: artifact.id }),
+      });
+      const data = await parseApiResponse(response);
+      const previousErrors = errors;
+      applyPayload(data);
 
-  const clickArtifact = (artifact) => {
-    if (completed || gameOver) return;
-
-    if (!selectedRequirement) {
-      registerError(artifact.id, "Activa un requisito primero para crear una traza valida.");
-      return;
-    }
-
-    if (isLinked(selectedRequirement.id, artifact.id)) {
-      setFeedback("Este enlace ya estaba registrado en la matriz.");
-      return;
-    }
-
-    const isExpected = selectedRequirement.affectedArtifacts.includes(artifact.id);
-
-    if (!isExpected) {
-      registerError(
-        artifact.id,
-        `Enlace invalido: ${artifact.name} no esta impactado por ${selectedRequirement.code}.`
-      );
-      return;
-    }
-
-    playClick();
-    setLinksByReq((prev) => {
-      const next = {
-        ...prev,
-        [selectedRequirement.id]: [...prev[selectedRequirement.id], artifact.id],
-      };
-
-      const totalAfter = Object.values(next).reduce((acc, links) => acc + links.length, 0);
-      if (totalAfter === TOTAL_REQUIRED_LINKS) {
-        playSuccess();
+      if (data.errors > previousErrors) {
+        playError?.();
+      } else {
+        playClick?.();
       }
-
-      return next;
-    });
-
-    setFeedback(`Traza creada: ${selectedRequirement.code} -> ${artifact.name}`);
+    } catch (error) {
+      setRequestError(error.message);
+    }
   };
 
   return (
@@ -222,9 +199,18 @@ export default function Isla6EggHead({ onIslandCompleted, onBackToMenu, playClic
             Requisitos completos: {completedRequirements}/{requirements.length}
           </span>
           <span className="rounded-lg border border-red-600/70 bg-red-950/40 px-3 py-2 text-red-200">
-            Strikes: {errors}/{MAX_ERRORS}
+            Strikes: {errors}/{maxErrors}
+          </span>
+          <span className="rounded-lg border border-amber-600/70 bg-amber-900/20 px-3 py-2 text-amber-200">
+            Progreso: {progress}%
           </span>
         </div>
+
+        {requestError && (
+          <p className="mt-3 rounded-lg border border-red-500/70 bg-red-900/30 px-4 py-2 text-sm font-bold text-red-100">
+            {requestError}
+          </p>
+        )}
 
         <p className="mt-4 rounded-lg border border-cyan-600/60 bg-cyan-900/20 px-4 py-3 text-sm font-bold text-cyan-200">
           {feedback}
@@ -249,19 +235,14 @@ export default function Isla6EggHead({ onIslandCompleted, onBackToMenu, playClic
             <div className="mt-4 space-y-3">
               {requirements.map((req) => {
                 const isSelected = selectedReqId === req.id;
-                const linkedForReq = linksByReq[req.id].length;
-                const reqDone = linkedForReq === req.affectedArtifacts.length;
-                const reqStatusLabel = reqDone
-                  ? "Trazado completo"
-                  : linkedForReq > 0
-                    ? "En revision"
-                    : "Sin revisar";
+                const linkedForReq = (linksByReq[req.id] || []).length;
+                const reqStatusLabel = linkedForReq > 0 ? "En revision" : "Sin revisar";
 
                 return (
                   <button
                     key={req.id}
                     type="button"
-                    disabled={completed || gameOver}
+                    disabled={completed || gameOver || isLoading}
                     onClick={() => selectRequirement(req)}
                     className={`w-full rounded-xl border px-4 py-3 text-left text-sm font-bold transition ${
                       isSelected
@@ -306,7 +287,7 @@ export default function Isla6EggHead({ onIslandCompleted, onBackToMenu, playClic
                   <motion.button
                     key={artifact.id}
                     type="button"
-                    disabled={completed || gameOver}
+                    disabled={completed || gameOver || isLoading}
                     onClick={() => clickArtifact(artifact)}
                     whileTap={{ scale: 0.98 }}
                     animate={

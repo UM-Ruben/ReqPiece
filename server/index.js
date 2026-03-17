@@ -23,6 +23,11 @@ import {
   WHOLECAKE_TIME_GAIN_ON_HIT,
   WHOLECAKE_TIME_PENALTY_ON_FAIL,
 } from "./wholeCakeData.js";
+import {
+  EGGHEAD_ARTIFACTS,
+  EGGHEAD_MAX_ERRORS,
+  EGGHEAD_REQUIREMENTS,
+} from "./eggheadData.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -516,6 +521,163 @@ app.post("/api/wholecake/finalize", (req, res) => {
   }
 
   res.json(buildWholeCakePayload(game));
+});
+
+// ── Isla 6: EggHead ───────────────────────────────────────────────────────
+
+const EGGHEAD_TOTAL_REQUIRED_LINKS = EGGHEAD_REQUIREMENTS.reduce(
+  (acc, req) => acc + req.affectedArtifacts.length,
+  0
+);
+
+function createEggHeadEmptyLinks() {
+  return EGGHEAD_REQUIREMENTS.reduce((acc, req) => {
+    acc[req.id] = [];
+    return acc;
+  }, {});
+}
+
+function toPublicEggHeadRequirement(req) {
+  return {
+    id: req.id,
+    code: req.code,
+    name: req.name,
+    status: req.status,
+    brief: req.brief,
+  };
+}
+
+function initEggHeadGame(sessionObj) {
+  sessionObj.egghead = {
+    selectedReqId: null,
+    linksByReq: createEggHeadEmptyLinks(),
+    errors: 0,
+    status: "in_progress",
+    feedback: "Selecciona un requisito y enlaza sus artefactos como en una matriz DOORS.",
+  };
+}
+
+function getOrCreateEggHeadGame(req) {
+  if (!req.session.egghead) {
+    initEggHeadGame(req.session);
+  }
+  return req.session.egghead;
+}
+
+function buildEggHeadPayload(game, extra = {}) {
+  const linkedCount = Object.values(game.linksByReq).reduce((acc, links) => acc + links.length, 0);
+  const completedRequirements = EGGHEAD_REQUIREMENTS.filter(
+    (req) => (game.linksByReq[req.id] || []).length === req.affectedArtifacts.length
+  ).length;
+
+  return {
+    status: game.status,
+    selectedReqId: game.selectedReqId,
+    linksByReq: game.linksByReq,
+    errors: game.errors,
+    maxErrors: EGGHEAD_MAX_ERRORS,
+    linkedCount,
+    completedRequirements,
+    totalRequiredLinks: EGGHEAD_TOTAL_REQUIRED_LINKS,
+    requirements: EGGHEAD_REQUIREMENTS.map(toPublicEggHeadRequirement),
+    artifacts: EGGHEAD_ARTIFACTS,
+    feedback: game.feedback,
+    ...extra,
+  };
+}
+
+function registerEggHeadError(game, feedback, artifactId) {
+  game.errors += 1;
+  game.feedback = feedback;
+  if (game.errors >= EGGHEAD_MAX_ERRORS) {
+    game.status = "failure";
+  }
+
+  return buildEggHeadPayload(game, {
+    wrongArtifactId: artifactId,
+  });
+}
+
+app.post("/api/egghead/start", (req, res) => {
+  initEggHeadGame(req.session);
+  res.json(buildEggHeadPayload(req.session.egghead));
+});
+
+app.post("/api/egghead/select", (req, res) => {
+  const game = getOrCreateEggHeadGame(req);
+
+  if (game.status !== "in_progress") {
+    return res.status(409).json({
+      error: "La partida ya terminó. Inicia una nueva para continuar.",
+      ...buildEggHeadPayload(game),
+    });
+  }
+
+  const { reqId } = req.body || {};
+  const selectedReq = EGGHEAD_REQUIREMENTS.find((reqItem) => reqItem.id === reqId);
+
+  if (!selectedReq) {
+    return res.status(400).json({ error: "reqId invalido." });
+  }
+
+  game.selectedReqId = selectedReq.id;
+  game.feedback = `${selectedReq.code} activo: analiza su descripcion y deduce que artefactos deben actualizarse.`;
+
+  return res.json(buildEggHeadPayload(game));
+});
+
+app.post("/api/egghead/artifact", (req, res) => {
+  const game = getOrCreateEggHeadGame(req);
+
+  if (game.status !== "in_progress") {
+    return res.status(409).json({
+      error: "La partida ya terminó. Inicia una nueva para continuar.",
+      ...buildEggHeadPayload(game),
+    });
+  }
+
+  const { artifactId } = req.body || {};
+  const artifact = EGGHEAD_ARTIFACTS.find((item) => item.id === artifactId);
+
+  if (!artifact) {
+    return res.status(400).json({ error: "artifactId invalido." });
+  }
+
+  if (!game.selectedReqId) {
+    return res.json(
+      registerEggHeadError(game, "Activa un requisito primero para crear una traza valida.", artifact.id)
+    );
+  }
+
+  const selectedReq = EGGHEAD_REQUIREMENTS.find((item) => item.id === game.selectedReqId);
+  const linkedForReq = game.linksByReq[selectedReq.id] || [];
+
+  if (linkedForReq.includes(artifact.id)) {
+    game.feedback = "Este enlace ya estaba registrado en la matriz.";
+    return res.json(buildEggHeadPayload(game));
+  }
+
+  const isExpected = selectedReq.affectedArtifacts.includes(artifact.id);
+
+  if (!isExpected) {
+    return res.json(
+      registerEggHeadError(
+        game,
+        `Enlace invalido: ${artifact.name} no esta impactado por ${selectedReq.code}.`,
+        artifact.id
+      )
+    );
+  }
+
+  game.linksByReq[selectedReq.id] = [...linkedForReq, artifact.id];
+  game.feedback = `Traza creada: ${selectedReq.code} -> ${artifact.name}`;
+
+  const linkedCount = Object.values(game.linksByReq).reduce((acc, links) => acc + links.length, 0);
+  if (linkedCount >= EGGHEAD_TOTAL_REQUIRED_LINKS) {
+    game.status = "victory";
+  }
+
+  return res.json(buildEggHeadPayload(game));
 });
 
 if (fs.existsSync(DIST_DIR)) {
