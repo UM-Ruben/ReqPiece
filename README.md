@@ -1,287 +1,145 @@
-# ReqPiece - En Busca del One Spec
+# ReqPiece
 
-Juego educativo desarrollado en React utilizando Tailwind CSS y Framer Motion. El jugador recorre islas donde se enfrentan minijuegos relacionados con conceptos de Ingeniería de Requisitos (GPDS).
+Aplicacion educativa interactiva inspirada en One Piece para aprender Ingenieria de Requisitos mediante minijuegos narrativos.
 
-## Estructura del proyecto
+## Resumen
 
+ReqPiece propone un recorrido por 7 islas, cada una asociada a un concepto clave de analisis y especificacion de requisitos (SRS, IEEE 830, trazabilidad y validacion).
+
+Objetivos del proyecto:
+- Convertir teoria de requisitos en practica guiada.
+- Reforzar aprendizaje mediante mecanicas de juego.
+- Mantener progreso secuencial con persistencia local.
+- Proteger la logica sensible de validacion en backend.
+
+## Caracteristicas principales
+
+- Experiencia por islas con narrativa previa en cada fase.
+- Minijuegos variados con temporizador, vidas y feedback inmediato.
+- Desbloqueo secuencial de progreso entre islas.
+- Persistencia de estado en localStorage con validacion de integridad.
+- Rutas protegidas para evitar acceso a islas bloqueadas.
+- Validacion server-side en islas migradas para ocultar respuestas.
+
+## Arquitectura
+
+Frontend:
+- React 18 + Vite 7
+- Tailwind CSS + Framer Motion
+- Navegacion SPA con rutas por isla
+
+Backend:
+- Express 5
+- express-session para estado de partida por sesion
+- Endpoints por isla para validacion de reglas y respuestas
+
+## Estructura del repositorio
+
+```text
+.
+|-- index.html
+|-- package.json
+|-- postcss.config.js
+|-- tailwind.config.js
+|-- vite.config.js
+|-- public/
+|   -- audio/
+|-- server/
+|   |-- index.js
+|   |-- loguetownData.js
+|   |-- sabaodyData.js
+|   |-- water7Dialogs.js
+|   |-- wholeCakeData.js
+|   |-- eggheadData.js
+|   -- wanoData.js
+-- src/
+    |-- App.jsx
+    |-- main.jsx
+    |-- index.css
+    |-- components/
+    |   |-- IslandIntro.jsx
+    |   |-- Isla1Loguetown.jsx
+    |   |-- Isla2Water7.jsx
+    |   |-- Isla3Sabaody.jsx
+    |   |-- Isla4BigMom.jsx
+    |   |-- Isla5Wano.jsx
+    |   |-- Isla6EggHead.jsx
+    |   -- Isla7LaughTale.jsx
+    |-- data/
+    |   -- islandIntroData.js
+    |-- hooks/
+    |   -- usePirateAudio.js
+    -- image/
 ```
-index.html
-package.json
-postcss.config.js
-tailwind.config.js
-vite.config.js
-src/
-  App.jsx                   # flujo principal y navegación entre islas
-  index.css
-  main.jsx
-  components/
-    IslandIntro.jsx         # pantalla de introducción narrativa
-    Isla1Loguetown.jsx      # minijuego activo
-    Isla2Water7.jsx         # minijuego activo
-    Isla3Sabaody.jsx        # minijuego activo
-    Isla4BigMom.jsx         # minijuego activo
-    Isla5Wano.jsx           # minijuego activo
-    Isla6EggHead.jsx        # minijuego activo
-    Isla7LaughTale.jsx      # pantalla final
-  data/
-    islandIntroData.js      # textos narrativos de cada isla
-  hooks/
-    usePirateAudio.js       # efectos de sonido (click, error, éxito)
-  image/
-    isla1Acierto.png
-    isla1Fallo.png
-    isla2Acierto.png
-    isla2Fallo.png
-    isla3Acierto.png
-    isla3Fallo.png
-    isla4BigMomAcierto.png
-    isla4BigMomFallo.png
-    isla5KaidoAcierto.png
-    isla5KaidoFallo.png
-    isla6VegapunkAcierto.png
-    isla6VegapunkFallo.png
-```
 
-## Instalación y ejecución
+## Requisitos
+
+- Node.js 20 o superior
+- npm 10 o superior
+
+## Instalacion
 
 ```bash
 npm install
-npm run dev          # arranca el servidor de desarrollo
-npm run build        # genera la versión de producción
-npm run preview      # sirve la build localmente
 ```
 
-### Dependencias principales
+## Ejecucion en desarrollo
 
-- **React** - Librería de UI
-- **Framer Motion** - Animaciones fluidas
-- **Lucide React** - Iconos
-- **Tailwind CSS** - Estilos
-- **Vite** - Build tool
-- **prop-types** - Validación de props (necesario para IslandIntro.jsx)
+1. Frontend (Vite):
 
-`prop-types` ya está declarado en `package.json`, así que `npm install` instala todo lo necesario.
-
-## Últimos cambios
-
-- Se añadió el botón **Volver al menú** en todas las islas que no lo tenían para un flujo de navegación consistente.
-- La **Isla 3** oculta el cursor nativo dentro del canvas y corrige la alineación del puntero visual del shooter.
-- La **Isla 6** fue rediseñada como una experiencia de trazabilidad inspirada en **IBM DOORS** y herramientas **CASE/CARE**.
-- La introducción de **EggHead** ahora incluye una explicación didáctica del objetivo educativo y de cómo interpretar el minijuego.
-- La navegación ahora usa rutas con nombre de isla (`/isla1-loguetown`, `/isla2-water7`, ..., `/isla7-laughtale`) para que al recargar se mantenga la isla actual.
-- Las rutas están protegidas: acceder por URL a una isla bloqueada redirige al menú.
-- El progreso en `localStorage` se valida con integridad secuencial (no se puede desbloquear isla 5 sin haber desbloqueado la 4).
-
-## Cómo jugar
-
-1. Desde el menú principal, selecciona una isla desbloqueada.
-2. **Nueva funcionalidad**: Al entrar a una isla, primero verás una pantalla de introducción narrativa que fusiona la historia de One Piece con el concepto de Ingeniería de Requisitos que aprenderás.
-3. Tras leer la introducción, pulsa el botón CTA (Call-To-Action) para iniciar el minijuego.
-4. Las 7 islas aparecen listadas con estado `Desbloqueada` o `Bloqueada`.
-5. El progreso es secuencial: cada isla desbloquea la siguiente al completarse.
-6. Todas las islas incluyen un botón **Volver al menú** para salir sin perder el hilo de navegación.
-7. Al ganar una isla se muestra su imagen de acierto y el botón **Siguiente isla**.
-8. Al pulsar **Siguiente isla**, vuelves al inicio (menú) para elegir manualmente la siguiente isla ya desbloqueada.
-9. Si fallas una isla, se muestra su imagen de fallo y opción de reintentar.
-10. La Isla 7 actúa como cierre del recorrido y conduce a la pantalla final de victoria.
-11. Si entras en una isla, la URL cambia a `/isla1-loguetown`, `/isla2-water7`, etc.; al recargar la página dentro del minijuego, la app restaura esa misma isla siempre que esté desbloqueada.
-
-## Flujo de progresión
-
-- `Isla 1` desbloquea `Isla 2`
-- `Isla 2` desbloquea `Isla 3`
-- `Isla 3` desbloquea `Isla 4`
-- `Isla 4` desbloquea `Isla 5`
-- `Isla 5` desbloquea `Isla 6`
-- `Isla 6` desbloquea `Isla 7`
-
-## Pantallas de introducción narrativa
-
-Cada isla cuenta con una pantalla de introducción épica que aparece antes del minijuego. Estas pantallas fusionan la narrativa de One Piece con conceptos específicos de Ingeniería de Requisitos (SRS):
-
-### 🏴‍☠️ Isla 1: Loguetown - "LA CIUDAD DEL PRINCIPIO Y EL FIN"
-**Enfoque SRS**: Recolección inicial de requisitos, visión del cliente y definición del alcance del proyecto.  
-**Narrativa**: El inicio de la gran aventura donde Gold Roger pronunció sus últimas palabras. Aquí aprendes a trazar tu ruta con el Log Pose del SRS.
-
-### 🔧 Isla 2: Water 7 - "LOS MAESTROS CARPINTEROS DE GALLEY-LA"
-**Enfoque SRS**: Requisitos no funcionales (rendimiento, seguridad, resistencia) y especificaciones técnicas.  
-**Narrativa**: Los carpinteros de Galley-La necesitan especificaciones precisas, no sueños. Debes traducir anhelos en requisitos técnicos concretos.
-
-### ⚡ Isla 3: Archipiélago Sabaody - "EL ENCUENTRO DE LAS SUPERNOVAS"
-**Enfoque SRS**: Casos de uso complejos, priorización de requisitos (MoSCoW) y gestión de múltiples stakeholders.  
-**Narrativa**: Once Supernovas con ambiciones diferentes. Aprenderás a distinguir entre requisitos (QUÉ) y soluciones técnicas (CÓMO).
-
-### 🍰 Isla 4: Whole Cake - "LA IRA DE BIG MOM"
-**Enfoque SRS**: Gestión de requisitos volátiles y manejo de cambios de última hora.  
-**Narrativa**: Big Mom y su hambre insaciable. Los clientes son como Yonkos: poderosos e impredecibles. Clasifica requisitos funcionales y no funcionales antes de que sea tarde.
-
-### ⚔️ Isla 5: Wano - "LA FORTALEZA DE ONIGASHIMA"
-**Enfoque SRS**: Restricciones del sistema, trazabilidad bajo condiciones extremas y validación según IEEE 830.  
-**Narrativa**: Para derrocar a Kaido y su sistema legacy, necesitas requisitos verificables, no ambiguos, completos y consistentes. La trazabilidad es tu katana.
-
-### 🔬 Isla 6: Egghead - "EL LABORATORIO DEL FUTURO CORROMPIDO"
-**Enfoque SRS**: Documentación de sistemas complejos, requisitos de interfaces externas (APIs) y detección de ambigüedades.  
-**Narrativa**: La tecnología de Vegapunk corrompida. Sistemas cuánticos, APIs engañosas y trampas lógicas. Un requisito mal interpretado explota instantáneamente.
-
-### 👑 Isla 7: Laugh Tale - "EL TESORO FINAL: EL ONE SPEC"
-**Enfoque SRS**: Consolidación del Documento SRS perfecto. Proyecto finalizado, validado y listo para ser leyenda.  
-**Narrativa**: El lugar donde Gold Roger dejó su legado. Aquí reclamarás el One Spec y serás coronado como el Rey de los Analistas.
-
----
-
-## Descripción detallada de minijuegos
-
-### Isla 1 — Loguetown: *Ordena los mapas*
-
-Arrastra las tarjetas para ordenar las **4 fases del ciclo de vida de requisitos**:`Obtención → Análisis → Especificación → Validación`
-
-- Pulsa **¡Zarpar!** para comprobar el orden.
-- Cada intento incorrecto resta 1 vida.
-- Al agotar las 3 vidas se muestra la imagen `isla1Fallo.png`.
-- Al ordenarlas correctamente se muestra `isla1Acierto.png` y se desbloquea la Isla 2.
-- Al ganar, aparece el botón **Siguiente isla**.
-
-### Isla 2 — Water 7: *Traduce el diálogo*
-
-Se muestran frases de un cliente o programador y debes elegir la **traducción técnica correcta** entre 3 opciones.
-
-- Hay **3 preguntas** que deben responderse en orden.
-- **No se avanza a la siguiente pregunta hasta acertar la actual.**
-- Cada respuesta incorrecta resta 1 vida; las opciones se vuelven a barajar.
-- Al agotar las 3 vidas se muestra la imagen `isla2Fallo.png`.
-- Al superar las 3 preguntas se muestra `isla2Acierto.png` y se desbloquea la Isla 3.
-- Al ganar, aparece el botón **Siguiente isla**.
-
-### Isla 3 — Archipielago Sabaody: *Shooter QUE vs COMO*
-
-- Destruye barriles de **solución** y deja caer barriles de **problema**.
-- Puntaje y temporizador de 60s.
-- El canvas oculta el cursor del sistema y utiliza un puntero de disparo propio alineado con la posición real del ratón.
-- Condición de victoria accesible: alcanzar el puntaje mínimo antes de terminar el tiempo.
-- Al terminar, muestra imagen de acierto (`isla3Acierto.png`) o fallo (`isla3Fallo.png`).
-- Al ganar, aparece el botón **Siguiente isla**.
-
-### Isla 4 — Whole Cake: *Swipe Funcional vs No Funcional*
-
-- Arrastra cada tarjeta al caldero izquierdo (**Funcional**) o derecho (**No Funcional**).
-- Soporte de drag con ratón y táctil.
-- Acierto: +10 puntos y recuperación de tiempo.
-- Error: penalización de tiempo.
-- Termina al quedarse sin tiempo o al clasificar todas las tarjetas.
-- Muestra `isla4BigMomAcierto.png` o `isla4BigMomFallo.png` según resultado.
-- Al ganar, aparece el botón **Siguiente isla**.
-
-### Isla 5 — Wano (Onigashima): *El corte de la precision (IEEE 830)*
-
-- Objetivo educativo: validar requisitos según IEEE 830 (no ambiguos, verificables y consistentes).
-- Mecánica de "Haki de Observación": inspecciona un pergamino y encuentra términos ambiguos.
-- Al hacer clic sobre el término correcto, se ejecuta un "tajo" visual y se reemplaza por una métrica técnica comprobable.
-- Incluye diálogo introductorio con Queen y King en tono autoritario pirata.
-- Temporizador de incursión, puntaje por corrección y progreso de términos corregidos.
-- Usa imágenes `isla5KaidoAcierto.png` y `isla5KaidoFallo.png`.
-- Al ganar, aparece el botón **Siguiente isla**.
-
-### Isla 6 — EggHead
-
-- Objetivo educativo: practicar **trazabilidad** y **análisis de impacto** cuando cambia un requisito.
-- Mecánica principal: selecciona un requisito del baseline, lee su descripción y deduce qué artefactos del sistema deben enlazarse.
-- Inspiración directa: reproduce de forma gamificada la lógica de trabajo de herramientas como **IBM DOORS** y otras herramientas **CASE/CARE**.
-- Ya no se muestra la solución por adelantado: el jugador debe razonar las trazas a partir de la descripción del requisito y del artefacto.
-- Incluye una **matriz de trazabilidad** visual, panel de **expediente activo**, feedback contextual y sistema de **3 strikes**.
-- Los enlaces erróneos producen feedback visual con sacudida y resaltado rojo.
-- Al completar correctamente la matriz se muestra `isla6VegapunkAcierto.png`.
-- Al agotar los intentos se muestra `isla6VegapunkFallo.png` con opción de reintentar o salir al menú.
-- Al ganar, aparece el botón **Siguiente isla**.
-
-### Isla 7 — Laugh Tale
-
-- Pantalla final previa a la victoria absoluta del juego.
-- Funciona como cierre narrativo de la travesía tras completar EggHead.
-- Desde aquí se accede a la pantalla final donde se reclama el **One Spec**.
-
----
-
-## Componente IslandIntro (Pantallas de Introducción)
-
-### Descripción técnica
-
-El componente `IslandIntro.jsx` es una pantalla narrativa épica que aparece antes de cada minijuego. Utiliza **Framer Motion** para animaciones suaves y **Lucide React** para iconos decorativos.
-
-### Características del componente:
-
-- **Animaciones de entrada**: Scale y opacity con delays escalonados para crear un efecto de "revelación" épico
-- **Diseño temático**: Estilo pergamino pirata con bordes dorados, gradientes cálidos y tipografía bold uppercase
-- **Estructura narrativa**:
-  - Subtítulo (nombre de la isla)
-  - Título épico principal
-  - Separador decorativo con iconos
-  - 2 párrafos de descripción narrativa
-  - Botón CTA personalizado por isla
-  - Decoración inferior
-- **Caso especial en Isla 6**: añade una bitácora didáctica que explica el flujo del minijuego y su relación con DOORS/CASE.
-
-### Props del componente:
-
-```jsx
-<IslandIntro 
-  islandKey="isla1"      // 'isla1' hasta 'isla7'
-  onStart={handleStart}  // función que se ejecuta al pulsar el CTA
-  playClick={playClick}  // opcional: audio feedback
-/>
+```bash
+npm run dev
 ```
 
-### Integración en App.jsx:
+2. Backend API (Express, con watch):
 
-Se añadió un estado `showingIntro` que controla la visibilidad de la introducción:
-
-```jsx
-const [showingIntro, setShowingIntro] = useState(false);
-
-// Al hacer clic en una isla desde el menú
-const goToIsland = (islandKey) => {
-  setCurrentScreen(islandKey);
-  setShowingIntro(true);  // Muestra la intro primero
-};
-
-// Al pulsar el CTA de la introducción
-const startIsland = () => {
-  setShowingIntro(false);  // Oculta intro y muestra minijuego
-};
+```bash
+npm run dev:api
 ```
 
-### Flujo de navegación actualizado:
+3. Abrir aplicacion en navegador:
 
-1. **Menú** → Clic en isla desbloqueada
-2. **Intro narrativa** → Lectura de la historia + contexto SRS
-3. **CTA** → Botón "¡ZARPAR!" / "¡ASALTAR!" / etc.
-4. **Minijuego** → Desafío interactivo
-5. **Resultado** → Victoria/Derrota
-6. **Menú** → Regreso al inicio
+- Frontend: http://localhost:5173
+- API: http://localhost:3001 (segun configuracion de server)
 
-### Rutas y recarga
+## Scripts disponibles
 
-- El menú principal se sirve en `/`.
-- Cada isla usa una ruta con nombre descriptivo:
-  - `/isla1-loguetown`
-  - `/isla2-water7`
-  - `/isla3-sabaody`
-  - `/isla4-wholecake`
-  - `/isla5-wano`
-  - `/isla6-egghead`
-  - `/isla7-laughtale`
-- La pantalla final usa la ruta `/victoria`.
-- Al recargar en una ruta de isla, la aplicación vuelve a abrir esa isla **solo si está desbloqueada**; si no, redirige al menú.
-- Acceder manualmente a `/victoria` solo funciona si todas las islas están desbloqueadas.
-- El progreso de islas desbloqueadas se guarda en `localStorage` con validación de integridad secuencial: si un valor se manipula saltándose el orden, se corrige automáticamente.
+| Script | Descripcion |
+|---|---|
+| npm run dev | Inicia frontend en modo desarrollo |
+| npm run dev:api | Inicia backend con recarga automatica |
+| npm run build | Genera build de produccion |
+| npm run preview | Sirve localmente la build de produccion |
+| npm run start:api | Inicia backend en modo normal |
 
-### Comandos de consola para desarrollo:
+## Flujo de juego
 
-En modo desarrollo (`npm run dev`), puedes usar los siguientes comandos en la consola del navegador:
+1. El jugador entra al menu principal.
+2. Selecciona una isla desbloqueada.
+3. Visualiza la introduccion narrativa.
+4. Completa el minijuego asociado.
+5. Si supera la isla, desbloquea la siguiente.
+6. El progreso queda guardado localmente.
 
-```javascript
-reqpiece.help                 // Muestra ayuda de comandos
-reqpiece.resolveIsland(1)     // Marca Isla 1 como completada y desbloquea Isla 2
-reqpiece.resolveIsland(6)     // Desbloquea todas las islas hasta la 7
-```
+## Islas y enfoque didactico
 
-**Nota**: Los comandos de consola solo funcionan en modo desarrollo, no en producción.
+| Isla | Tema |
+|---|---|
+| Isla 1 - Loguetown | Orden del ciclo de vida de requisitos |
+| Isla 2 - Water 7 | Traduccion de necesidades a requisitos tecnicos |
+| Isla 3 - Sabaody | Diferenciar QUE (requisito) vs COMO (solucion) |
+| Isla 4 - Whole Cake | Clasificacion funcional vs no funcional |
+| Isla 5 - Wano | Ambiguedad y verificabilidad (IEEE 830) |
+| Isla 6 - EggHead | Trazabilidad y analisis de impacto |
+| Isla 7 - Laugh Tale | Cierre narrativo y consolidacion |
+
+## Seguridad y proteccion de respuestas
+
+Se aplica una estrategia mixta:
+- Endurecimiento de build en frontend (sin sourcemaps en produccion, minificacion, limpieza de debug).
+- Validacion en backend para evitar exponer respuestas en cliente.
+- Estado de sesion en servidor para controlar partidas.
+
+Nota tecnica:
+- En una SPA, cualquier logica puramente cliente puede inspeccionarse.
+- Para contenido sensible, la validacion debe residir en backend.
