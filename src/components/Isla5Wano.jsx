@@ -4,105 +4,115 @@ import imageFail from "../image/isla5KaidoFallo.png";
 import imageSuccess from "../image/isla5KaidoAcierto.png";
 
 const TOTAL_TIME = 45;
-const MAX_LIVES = 2;
 
-const REQUIREMENTS = [
-  {
-    id: "r1",
-    before: "El sistema de alerta debe responder de forma ",
-    palabra: "rapida",
-    after: " cuando el capataz active una emergencia.",
-    reemplazo: "en menos de 2 segundos",
-    razon: "Es verificable midiendo tiempo de respuesta maximo.",
-  },
-  {
-    id: "r2",
-    before: "La consola central de Onigashima debe ser ",
-    palabra: "intuitiva",
-    after: " para nuevos operarios.",
-    reemplazo: "aprendible en menos de 15 minutos con 0 errores criticos",
-    razon: "Permite pruebas de usabilidad con un criterio cuantificable.",
-  },
-  {
-    id: "r3",
-    before: "El blindaje del arsenal debe ser ",
-    palabra: "indestructible",
-    after: " ante ataques externos.",
-    reemplazo: "capaz de soportar impactos de mas de 50 toneladas sin ruptura",
-    razon: "Define umbral de resistencia comprobable en laboratorio.",
-  },
-  {
-    id: "r4",
-    before: "La red de comunicacion del castillo debe ser ",
-    palabra: "robusta",
-    after: " durante operaciones nocturnas.",
-    reemplazo: "disponible al 99.95% mensual y tolerar 1 nodo caido",
-    razon: "Es medible con metricas de disponibilidad y tolerancia a fallos.",
-  },
-  {
-    id: "r5",
-    before: "El registro de armamento debe ser ",
-    palabra: "seguro",
-    after: " para evitar sabotajes de infiltrados.",
-    reemplazo: "protegido con cifrado AES-256 y MFA obligatoria",
-    razon: "Es auditable mediante controles tecnicos concretos.",
-  },
-  {
-    id: "r6",
-    before: "El sistema de vigilancia debe funcionar de manera ",
-    palabra: "eficiente",
-    after: " durante todo el dia.",
-    reemplazo: "consumiendo menos de 500W y procesando 30 fps minimo",
-    razon: "Define consumo energetico y rendimiento medibles.",
-  },
-  {
-    id: "r7",
-    before: "La plataforma de logistica debe tener una interfaz ",
-    palabra: "amigable",
-    after: " para los soldados rasos.",
-    reemplazo: "con indice SUS superior a 75 puntos en tests de usuario",
-    razon: "Usa metrica estandar de usabilidad verificable.",
-  },
-  {
-    id: "r8",
-    before: "El tiempo de respaldo de datos debe ser ",
-    palabra: "aceptable",
-    after: " para no interrumpir operaciones.",
-    reemplazo: "completado en menos de 4 horas en ventana nocturna",
-    razon: "Establece limite temporal concreto y verificable.",
-  },
-];
+async function parseApiResponse(response) {
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
+  }
+
+  return payload;
+}
+
+function tokenize(text) {
+  return String(text || "").trim().split(/\s+/).filter(Boolean);
+}
 
 export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, playError, playSuccess }) {
-  const [resolvedMap, setResolvedMap] = useState(() =>
-    REQUIREMENTS.reduce((acc, req) => ({ ...acc, [req.id]: false }), {})
-  );
+  const [requirements, setRequirements] = useState([]);
+  const [resolvedMap, setResolvedMap] = useState({});
+  const [resolvedDetails, setResolvedDetails] = useState({});
   const [hoveredWordId, setHoveredWordId] = useState(null);
   const [slicedWordId, setSlicedWordId] = useState(null);
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(MAX_LIVES);
+  const [lives, setLives] = useState(2);
+  const [maxLives, setMaxLives] = useState(2);
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
+  const [totalTime, setTotalTime] = useState(TOTAL_TIME);
+  const [solvedCount, setSolvedCount] = useState(0);
+  const [totalRequirements, setTotalRequirements] = useState(0);
   const [feedback, setFeedback] = useState({ text: "Activa el Haki de Observacion y revisa el pergamino.", color: "#1d4ed8" });
-  const [outcome, setOutcome] = useState(null);
+  const [status, setStatus] = useState("in_progress");
+  const [isLoading, setIsLoading] = useState(true);
+  const [requestError, setRequestError] = useState("");
 
-  const solvedCount = useMemo(
-    () => Object.values(resolvedMap).filter(Boolean).length,
-    [resolvedMap]
-  );
+  const outcome = status === "victory" ? "success" : status === "failure" ? "failure" : null;
 
-  const progress = Math.max(0, (timeLeft / TOTAL_TIME) * 100);
+  const progress = useMemo(() => {
+    if (totalTime <= 0) return 0;
+    return Math.max(0, (timeLeft / totalTime) * 100);
+  }, [timeLeft, totalTime]);
 
-  const finishGame = useCallback((result) => {
-    setOutcome((prev) => prev || result);
-  }, []);
+  const applyPayload = useCallback((data) => {
+    setStatus(data.status || "in_progress");
+    setScore(data.score || 0);
+    setLives(data.lives || 0);
+    setMaxLives(data.maxLives || 2);
+    setResolvedMap(data.resolvedMap || {});
+    setResolvedDetails(data.resolvedDetails || {});
+    setRequirements(data.requirements || []);
+    setTotalTime(data.totalTime || TOTAL_TIME);
+    setSolvedCount(data.solvedCount || 0);
+    setTotalRequirements(data.totalRequirements || 0);
+
+    if (typeof data.feedback === "string" && data.feedback.length > 0) {
+      setFeedback((prev) => ({ ...prev, text: data.feedback }));
+    }
+
+    if (data.action === "success") {
+      setFeedback({ text: data.feedback || "Tajo preciso.", color: "#15803d" });
+      setSlicedWordId(data.actionRequirementId || null);
+      playSuccess?.();
+      window.setTimeout(() => {
+        setSlicedWordId((prev) => (prev === data.actionRequirementId ? null : prev));
+      }, 280);
+    } else if (data.action === "error") {
+      setFeedback({ text: data.feedback || "Tajo errado.", color: "#b91c1c" });
+      playError?.();
+    }
+  }, [playError, playSuccess]);
+
+  const startGame = useCallback(async () => {
+    setIsLoading(true);
+    setRequestError("");
+    try {
+      const response = await fetch("/api/wano/start", { method: "POST" });
+      const data = await parseApiResponse(response);
+      applyPayload(data);
+      setTimeLeft(data.totalTime || TOTAL_TIME);
+      setHoveredWordId(null);
+      setSlicedWordId(null);
+      setFeedback({
+        text: data.feedback || "Activa el Haki de Observacion y revisa el pergamino.",
+        color: "#1d4ed8",
+      });
+    } catch (error) {
+      setRequestError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [applyPayload]);
 
   useEffect(() => {
-    if (outcome) return;
+    void startGame();
+  }, [startGame]);
+
+  useEffect(() => {
+    if (outcome || isLoading) return;
     const timer = window.setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           window.clearInterval(timer);
-          finishGame("failure");
+          setStatus("failure");
+          void fetch("/api/wano/finalize", { method: "POST" }).catch(() => {
+            // ignore network finalize errors; local status is already failure
+          });
           return 0;
         }
         return prev - 1;
@@ -110,67 +120,7 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [finishGame, outcome]);
-
-  useEffect(() => {
-    if (!outcome && solvedCount >= REQUIREMENTS.length) {
-      finishGame("success");
-    }
-  }, [finishGame, outcome, solvedCount]);
-
-  const loseLife = useCallback(() => {
-    setLives((prev) => {
-      const next = Math.max(0, prev - 1);
-      if (next <= 0) {
-        finishGame("failure");
-      }
-      return next;
-    });
-  }, [finishGame]);
-
-  const handleSlice = (requirement) => {
-    if (outcome || resolvedMap[requirement.id]) return;
-
-    playSuccess?.();
-    setSlicedWordId(requirement.id);
-    setResolvedMap((prev) => ({ ...prev, [requirement.id]: true }));
-    setScore((prev) => prev + 20);
-    setFeedback({
-      text: `Tajo preciso: "${requirement.palabra}" ahora es verificable.`,
-      color: "#15803d",
-    });
-
-    window.setTimeout(() => {
-      setSlicedWordId((prev) => (prev === requirement.id ? null : prev));
-    }, 280);
-  };
-
-  const handleWrongSlice = useCallback((requirement) => {
-    if (outcome || resolvedMap[requirement.id]) return;
-
-    playError?.();
-    loseLife();
-    setFeedback({
-      text: "Tajo errado: esa palabra no era ambigua.",
-      color: "#b91c1c",
-    });
-  }, [loseLife, outcome, playError, resolvedMap]);
-
-  const tokenize = useCallback((text) => {
-    return text.trim().split(/\s+/).filter(Boolean);
-  }, []);
-
-  const resetGame = () => {
-    playClick();
-    setResolvedMap(REQUIREMENTS.reduce((acc, req) => ({ ...acc, [req.id]: false }), {}));
-    setHoveredWordId(null);
-    setSlicedWordId(null);
-    setScore(0);
-    setLives(MAX_LIVES);
-    setTimeLeft(TOTAL_TIME);
-    setFeedback({ text: "Activa el Haki de Observacion y revisa el pergamino.", color: "#1d4ed8" });
-    setOutcome(null);
-  };
+  }, [isLoading, outcome]);
 
   useEffect(() => {
     if (!outcome) return;
@@ -180,6 +130,29 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
       playError?.();
     }
   }, [outcome, playError, playSuccess]);
+
+  const handleSlice = async (requirement, token) => {
+    if (outcome || isLoading || resolvedMap[requirement.id]) return;
+
+    playClick?.();
+    setRequestError("");
+    try {
+      const response = await fetch("/api/wano/cut", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requirementId: requirement.id, token }),
+      });
+      const data = await parseApiResponse(response);
+      applyPayload(data);
+    } catch (error) {
+      setRequestError(error.message);
+    }
+  };
+
+  const resetGame = () => {
+    playClick();
+    void startGame();
+  };
 
   return (
     <motion.section
@@ -227,10 +200,16 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
         </div>
       </div>
 
+      {requestError && (
+        <p className="mt-3 rounded-lg border border-red-500/70 bg-red-900/30 px-4 py-2 text-sm font-bold text-red-100">
+          {requestError}
+        </p>
+      )}
+
       <div className="mt-3 flex flex-wrap gap-3 text-sm font-black uppercase tracking-[0.08em]">
         <span className="rounded-lg bg-zinc-900 px-3 py-2 text-amber-100">Puntaje: {score}</span>
-        <span className="rounded-lg bg-zinc-900 px-3 py-2 text-amber-100">Vidas: {lives}/{MAX_LIVES}</span>
-        <span className="rounded-lg bg-zinc-900 px-3 py-2 text-amber-100">Corregidos: {solvedCount}/{REQUIREMENTS.length}</span>
+        <span className="rounded-lg bg-zinc-900 px-3 py-2 text-amber-100">Vidas: {lives}/{maxLives}</span>
+        <span className="rounded-lg bg-zinc-900 px-3 py-2 text-amber-100">Corregidos: {solvedCount}/{totalRequirements}</span>
         <span className="rounded-lg px-3 py-2 text-white" style={{ backgroundColor: feedback.color }}>
           {feedback.text}
         </span>
@@ -240,56 +219,39 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
         <p className="mb-4 text-center font-black uppercase tracking-[0.2em] text-amber-950">Pergamino de requisitos</p>
 
         <div className="space-y-4">
-          {REQUIREMENTS.map((req) => {
-            const solved = resolvedMap[req.id];
-            const beforeTokens = tokenize(req.before);
-            const afterTokens = tokenize(req.after);
+          {requirements.map((req) => {
+            const solved = Boolean(resolvedMap[req.id]);
+            const tokens = tokenize(req.text);
+            const detail = resolvedDetails[req.id] || null;
+
             return (
               <div key={req.id} className="rounded-xl border border-amber-900/25 bg-amber-100/70 p-4 text-sm leading-relaxed text-amber-950">
                 <p>
-                  {beforeTokens.map((part, idx) => (
-                    <span key={`${req.id}-before-${idx}`}>
-                      <button
-                        type="button"
-                        onClick={() => handleWrongSlice(req)}
-                        className="inline border-none bg-transparent p-0 text-inherit"
-                      >
-                        {part}
-                      </button>{" "}
-                    </span>
-                  ))}
-                  {!solved ? (
-                    <button
-                      type="button"
-                      onMouseEnter={() => setHoveredWordId(req.id)}
-                      onMouseLeave={() => setHoveredWordId((prev) => (prev === req.id ? null : prev))}
-                      onClick={() => handleSlice(req)}
-                      className={`relative inline border-none bg-transparent p-0 text-inherit transition`}
-                    >
-                      {req.palabra}
-                      {slicedWordId === req.id && (
-                        <span className="pointer-events-none absolute left-0 top-1/2 h-[2px] w-full -translate-y-1/2 rotate-[-16deg] bg-red-600" />
-                      )}
-                    </button>
+                  {solved ? (
+                    req.text
                   ) : (
-                    <span className="font-black text-emerald-800">{req.reemplazo}</span>
+                    tokens.map((part, idx) => (
+                      <span key={`${req.id}-${idx}`}>
+                        <button
+                          type="button"
+                          onMouseEnter={() => setHoveredWordId(req.id)}
+                          onMouseLeave={() => setHoveredWordId((prev) => (prev === req.id ? null : prev))}
+                          onClick={() => handleSlice(req, part)}
+                          className="relative inline border-none bg-transparent p-0 text-inherit"
+                        >
+                          {part}
+                          {slicedWordId === req.id && hoveredWordId === req.id && (
+                            <span className="pointer-events-none absolute left-0 top-1/2 h-[2px] w-full -translate-y-1/2 rotate-[-16deg] bg-red-600" />
+                          )}
+                        </button>{" "}
+                      </span>
+                    ))
                   )}
-                  {afterTokens.length > 0 && " "}
-                  {afterTokens.map((part, idx) => (
-                    <span key={`${req.id}-after-${idx}`}>
-                      <button
-                        type="button"
-                        onClick={() => handleWrongSlice(req)}
-                        className="inline border-none bg-transparent p-0 text-inherit"
-                      >
-                        {part}
-                      </button>
-                      {idx < afterTokens.length - 1 && " "}
-                    </span>
-                  ))}
                 </p>
                 <p className="mt-2 text-xs font-semibold text-zinc-800/80">
-                  {solved ? `Metrica aplicada: ${req.razon}` : "Inspeccion en curso."}
+                  {solved && detail
+                    ? `Reemplazo aplicado: ${detail.replacement}. Motivo: ${detail.reason}`
+                    : "Inspeccion en curso."}
                 </p>
               </div>
             );

@@ -23,6 +23,7 @@ import {
   WHOLECAKE_TIME_GAIN_ON_HIT,
   WHOLECAKE_TIME_PENALTY_ON_FAIL,
 } from "./wholeCakeData.js";
+import { WANO_MAX_LIVES, WANO_REQUIREMENTS, WANO_TOTAL_TIME } from "./wanoData.js";
 import {
   EGGHEAD_ARTIFACTS,
   EGGHEAD_MAX_ERRORS,
@@ -521,6 +522,151 @@ app.post("/api/wholecake/finalize", (req, res) => {
   }
 
   res.json(buildWholeCakePayload(game));
+});
+
+// ── Isla 5: Wano ──────────────────────────────────────────────────────────
+
+function normalizeWord(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function createWanoResolvedMap() {
+  return WANO_REQUIREMENTS.reduce((acc, req) => {
+    acc[req.id] = false;
+    return acc;
+  }, {});
+}
+
+function initWanoGame(sessionObj) {
+  sessionObj.wano = {
+    resolvedMap: createWanoResolvedMap(),
+    lives: WANO_MAX_LIVES,
+    score: 0,
+    status: "in_progress",
+    feedback: "Activa el Haki de Observacion y revisa el pergamino.",
+  };
+}
+
+function getOrCreateWanoGame(req) {
+  if (!req.session.wano) {
+    initWanoGame(req.session);
+  }
+  return req.session.wano;
+}
+
+function buildWanoPayload(game, extra = {}) {
+  const requirements = WANO_REQUIREMENTS.map((req) => ({
+    id: req.id,
+    text: req.text,
+  }));
+
+  const resolvedDetails = {};
+  WANO_REQUIREMENTS.forEach((req) => {
+    if (game.resolvedMap[req.id]) {
+      resolvedDetails[req.id] = {
+        replacement: req.replacement,
+        reason: req.reason,
+      };
+    }
+  });
+
+  const solvedCount = Object.values(game.resolvedMap).filter(Boolean).length;
+
+  return {
+    status: game.status,
+    lives: game.lives,
+    maxLives: WANO_MAX_LIVES,
+    score: game.score,
+    totalTime: WANO_TOTAL_TIME,
+    solvedCount,
+    totalRequirements: WANO_REQUIREMENTS.length,
+    resolvedMap: game.resolvedMap,
+    resolvedDetails,
+    requirements,
+    feedback: game.feedback,
+    ...extra,
+  };
+}
+
+app.post("/api/wano/start", (req, res) => {
+  initWanoGame(req.session);
+  res.json(buildWanoPayload(req.session.wano));
+});
+
+app.post("/api/wano/cut", (req, res) => {
+  const game = getOrCreateWanoGame(req);
+
+  if (game.status !== "in_progress") {
+    return res.status(409).json({
+      error: "La partida ya termino. Inicia una nueva para continuar.",
+      ...buildWanoPayload(game),
+    });
+  }
+
+  const { requirementId, token } = req.body || {};
+  if (!requirementId || typeof requirementId !== "string") {
+    return res.status(400).json({ error: "requirementId es obligatorio." });
+  }
+  if (!token || typeof token !== "string") {
+    return res.status(400).json({ error: "token es obligatorio." });
+  }
+
+  const requirement = WANO_REQUIREMENTS.find((item) => item.id === requirementId);
+  if (!requirement) {
+    return res.status(400).json({ error: "requirementId invalido." });
+  }
+
+  if (game.resolvedMap[requirement.id]) {
+    game.feedback = "Ese requisito ya fue corregido.";
+    return res.json(buildWanoPayload(game));
+  }
+
+  const isCorrect = normalizeWord(token) === normalizeWord(requirement.targetWord);
+
+  if (isCorrect) {
+    game.resolvedMap[requirement.id] = true;
+    game.score += 20;
+    game.feedback = `Tajo preciso: "${requirement.targetWord}" ahora es verificable.`;
+
+    const solvedCount = Object.values(game.resolvedMap).filter(Boolean).length;
+    if (solvedCount >= WANO_REQUIREMENTS.length) {
+      game.status = "victory";
+    }
+
+    return res.json(
+      buildWanoPayload(game, {
+        action: "success",
+        actionRequirementId: requirement.id,
+      })
+    );
+  }
+
+  game.lives = Math.max(0, game.lives - 1);
+  game.feedback = "Tajo errado: esa palabra no era ambigua.";
+  if (game.lives <= 0) {
+    game.status = "failure";
+  }
+
+  return res.json(
+    buildWanoPayload(game, {
+      action: "error",
+      actionRequirementId: requirement.id,
+    })
+  );
+});
+
+app.post("/api/wano/finalize", (req, res) => {
+  const game = getOrCreateWanoGame(req);
+
+  if (game.status === "in_progress") {
+    game.status = "failure";
+  }
+
+  res.json(buildWanoPayload(game));
 });
 
 // ── Isla 6: EggHead ───────────────────────────────────────────────────────
