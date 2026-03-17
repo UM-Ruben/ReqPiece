@@ -58,15 +58,6 @@ export default function IslandIntro({ islandKey, onStart, playClick }) {
       ],
       cta: '¡HACKEAR EL LABORATORIO!',
     },
-    isla7: {
-      title: 'EL TESORO FINAL: EL ONE SPEC',
-      subtitle: 'LAUGH TALE',
-      description: [
-        'Laugh Tale, la isla que solo los verdaderos maestros pueden encontrar. Después de atravesar el Grand Line completo, dominando cada aspecto de la Ingeniería de Requisitos, finalmente llegas al lugar donde Gold Roger dejó su legado. Aquí no hay enemigos, no hay trampas: solo la validación final.',
-        '¿Has construido el SRS perfecto? ¿Cada requisito está trazado, verificado, priorizado y validado? Si es así, reclamarás el One Spec: el Documento de Especificación de Requisitos de Software que se convertirá en leyenda. Tu nombre será cantado como el nuevo Rey de los Analistas.'
-      ],
-      cta: '¡RECLAMAR EL ONE SPEC!',
-    },
   };
 
   const intro = intros[islandKey];

@@ -13,7 +13,7 @@ export const islandIntros = {
     subtitle: 'WATER 7',
     description: [
       'Water 7, la ciudad flotante donde los mejores carpinteros del mundo construyen barcos que desafían los mares más peligrosos. Iceburg y su equipo de Galley-La no entienden de sueños: hablan de maderas, remaches, quillas y velas.',
-      'Tu cliente te ha dicho "quiero un barco que llegue a Laugh Tale", pero los carpinteros necesitan especificaciones técnicas precisas. Debes traducir esos anhelos en requisitos no funcionales: rendimiento, resistencia, seguridad. Aquí aprenderás a hablar el idioma de los constructores, porque un barco mal diseñado se hunde antes de ver la primera tormenta.'
+      'Tu cliente te ha dicho "quiero un barco que llegue al destino final", pero los carpinteros necesitan especificaciones técnicas precisas. Debes traducir esos anhelos en requisitos no funcionales: rendimiento, resistencia, seguridad. Aquí aprenderás a hablar el idioma de los constructores, porque un barco mal diseñado se hunde antes de ver la primera tormenta.'
     ],
     cta: '¡ENTREGAR LOS PLANOS A GALLEY-LA!',
   },
@@ -52,14 +52,5 @@ export const islandIntros = {
       'Sistemas de alta complejidad, APIs cuánticas, seraphims programados con bugs ocultos. Para sobrevivir al laboratorio definitivo, debes dominar la trazabilidad cuántica y detectar cada inconsistencia en la documentación técnica. Un requisito mal interpretado aquí no falla gradualmente: explota instantáneamente.'
     ],
     cta: '¡HACKEAR EL LABORATORIO!',
-  },
-  isla7: {
-    title: 'EL TESORO FINAL: EL ONE SPEC',
-    subtitle: 'LAUGH TALE',
-    description: [
-      'Laugh Tale, la isla que solo los verdaderos maestros pueden encontrar. Después de atravesar el Grand Line completo, dominando cada aspecto de la Ingeniería de Requisitos, finalmente llegas al lugar donde Gold Roger dejó su legado. Aquí no hay enemigos, no hay trampas: solo la validación final.',
-      '¿Has construido el SRS perfecto? ¿Cada requisito está trazado, verificado, priorizado y validado? Si es así, reclamarás el One Spec: el Documento de Especificación de Requisitos de Software que se convertirá en leyenda. Tu nombre será cantado como el nuevo Rey de los Analistas.'
-    ],
-    cta: '¡RECLAMAR EL ONE SPEC!',
   },
 };
