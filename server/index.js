@@ -16,6 +16,13 @@ import {
   SABAODY_MAX_LIVES,
   SABAODY_MIN_SCORE_TO_WIN,
 } from "./sabaodyData.js";
+import {
+  WHOLECAKE_GAME_TIME_SECONDS,
+  WHOLECAKE_MAX_TIME_SECONDS,
+  WHOLECAKE_REQUIREMENTS_POOL,
+  WHOLECAKE_TIME_GAIN_ON_HIT,
+  WHOLECAKE_TIME_PENALTY_ON_FAIL,
+} from "./wholeCakeData.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -380,6 +387,135 @@ app.post("/api/sabaody/finalize", (req, res) => {
   }
 
   res.json(saabodyStatePayload(game));
+});
+
+// ── Isla 4: Whole Cake ─────────────────────────────────────────────────────
+
+function toWholeCakePublicCard(card) {
+  return {
+    id: card.id,
+    texto: card.texto,
+  };
+}
+
+function syncWholeCakeTimer(game) {
+  if (game.status !== "in_progress") return;
+
+  const now = Date.now();
+  const elapsedSeconds = Math.floor((now - game.lastTickAtMs) / 1000);
+  if (elapsedSeconds <= 0) return;
+
+  game.timeLeft = Math.max(0, game.timeLeft - elapsedSeconds);
+  game.lastTickAtMs = now;
+
+  if (game.timeLeft <= 0) {
+    game.status = "failure";
+  }
+}
+
+function initWholeCakeGame(sessionObj) {
+  const shuffledDeck = shuffle(WHOLECAKE_REQUIREMENTS_POOL.map((c) => ({ ...c })));
+  sessionObj.wholecake = {
+    deck: shuffledDeck,
+    cardIndex: 0,
+    score: 0,
+    timeLeft: WHOLECAKE_GAME_TIME_SECONDS,
+    status: "in_progress",
+    lastTickAtMs: Date.now(),
+  };
+}
+
+function getOrCreateWholeCakeGame(req) {
+  if (!req.session.wholecake) {
+    initWholeCakeGame(req.session);
+  }
+  return req.session.wholecake;
+}
+
+function buildWholeCakePayload(game, feedback = "", feedbackTone = "neutral") {
+  const totalCards = game.deck.length;
+  const currentCard = game.status === "in_progress" ? game.deck[game.cardIndex] || null : null;
+
+  return {
+    status: game.status,
+    score: game.score,
+    timeLeft: game.timeLeft,
+    initialTime: WHOLECAKE_GAME_TIME_SECONDS,
+    maxTime: WHOLECAKE_MAX_TIME_SECONDS,
+    currentCardNumber: Math.min(game.cardIndex + 1, totalCards),
+    totalCards,
+    card: currentCard ? toWholeCakePublicCard(currentCard) : null,
+    feedback,
+    feedbackTone,
+  };
+}
+
+app.post("/api/wholecake/start", (req, res) => {
+  initWholeCakeGame(req.session);
+  const game = req.session.wholecake;
+  res.json(buildWholeCakePayload(game));
+});
+
+app.post("/api/wholecake/swipe", (req, res) => {
+  const game = getOrCreateWholeCakeGame(req);
+  syncWholeCakeTimer(game);
+
+  if (game.status !== "in_progress") {
+    return res.status(409).json({
+      error: "La partida ya terminó. Inicia una nueva para continuar.",
+      ...buildWholeCakePayload(game),
+    });
+  }
+
+  const { side } = req.body || {};
+  if (side !== "left" && side !== "right") {
+    return res.status(400).json({ error: "side debe ser 'left' o 'right'." });
+  }
+
+  const currentCard = game.deck[game.cardIndex];
+  if (!currentCard) {
+    game.status = "victory";
+    return res.json(buildWholeCakePayload(game));
+  }
+
+  const guessedType = side === "left" ? "funcional" : "no-funcional";
+  const isCorrect = guessedType === currentCard.tipo;
+
+  let feedback = "";
+  let feedbackTone = "neutral";
+
+  if (isCorrect) {
+    game.score += 10;
+    game.timeLeft = Math.min(WHOLECAKE_MAX_TIME_SECONDS, game.timeLeft + WHOLECAKE_TIME_GAIN_ON_HIT);
+    feedback = "¡Delicioso!";
+    feedbackTone = "success";
+  } else {
+    game.timeLeft = Math.max(0, game.timeLeft - WHOLECAKE_TIME_PENALTY_ON_FAIL);
+    feedback = "¡Sabor amargo!";
+    feedbackTone = "error";
+  }
+
+  game.cardIndex += 1;
+  game.lastTickAtMs = Date.now();
+
+  if (game.timeLeft <= 0) {
+    game.status = "failure";
+  } else if (game.cardIndex >= game.deck.length) {
+    game.status = "victory";
+  }
+
+  return res.json(buildWholeCakePayload(game, feedback, feedbackTone));
+});
+
+app.post("/api/wholecake/finalize", (req, res) => {
+  const game = getOrCreateWholeCakeGame(req);
+  syncWholeCakeTimer(game);
+
+  if (game.status === "in_progress") {
+    game.status = game.cardIndex >= game.deck.length ? "victory" : "failure";
+  }
+
+  res.json(buildWholeCakePayload(game));
 });
 
 if (fs.existsSync(DIST_DIR)) {

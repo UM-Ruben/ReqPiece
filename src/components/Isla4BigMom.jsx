@@ -1,76 +1,131 @@
 import { motion, useAnimation } from "framer-motion";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import imageFail from "../image/isla4BigMomFallo.png";
 import imageSuccess from "../image/isla4BigMomAcierto.png";
 
 const GAME_TIME_SECONDS = 40;
 const MAX_TIME_SECONDS = 60;
-const TIME_GAIN_ON_HIT = 2;
-const TIME_PENALTY_ON_FAIL = 7;
 const SWIPE_THRESHOLD = 120;
 
-const REQUIREMENTS_POOL = [
-  { texto: "El usuario debe poder registrar una cuenta nueva.", tipo: "funcional" },
-  { texto: "El sistema debe permitir recuperar la contrasena por correo.", tipo: "funcional" },
-  { texto: "La app debe generar reportes PDF de ventas.", tipo: "funcional" },
-  { texto: "El cliente puede filtrar pedidos por fecha y estado.", tipo: "funcional" },
-  { texto: "El administrador puede eliminar usuarios inactivos.", tipo: "funcional" },
-  { texto: "El sistema debe enviar notificaciones push al móvil.", tipo: "funcional" },
-  { texto: "La respuesta de búsqueda debe tardar menos de 2 segundos.", tipo: "no-funcional" },
-  { texto: "El sistema debe tener disponibilidad mínima del 99.9%.", tipo: "no-funcional" },
-  { texto: "Las contraseñas deben almacenarse cifradas con hash seguro.", tipo: "no-funcional" },
-  { texto: "La interfaz debe ser usable desde móviles y tablets.", tipo: "no-funcional" },
-  { texto: "El tiempo de carga de la página principal debe ser menor a 3 segundos.", tipo: "no-funcional" },
-  { texto: "El sistema debe cumplir con el estándar ISO 27001 de seguridad.", tipo: "no-funcional" },
-];
-
-function shuffle(array) {
-  const copied = [...array];
-  for (let i = copied.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copied[i], copied[j]] = [copied[j], copied[i]];
+async function parseApiResponse(response) {
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
   }
-  return copied;
+
+  if (!response.ok) {
+    throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
+  }
+
+  return payload;
 }
 
 export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClick, playError, playSuccess }) {
-  const [deck, setDeck] = useState(() => shuffle(REQUIREMENTS_POOL));
-  const [cardIndex, setCardIndex] = useState(0);
+  const feedbackTimeoutRef = useRef(null);
+  const [currentCard, setCurrentCard] = useState(null);
+  const [currentCardNumber, setCurrentCardNumber] = useState(1);
+  const [totalCards, setTotalCards] = useState(0);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_TIME_SECONDS);
+  const [initialTime, setInitialTime] = useState(GAME_TIME_SECONDS);
+  const [maxTime, setMaxTime] = useState(MAX_TIME_SECONDS);
   const [feedback, setFeedback] = useState({ text: "", color: "#0369a1" });
   const [outcome, setOutcome] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLocked, setIsLocked] = useState(false);
+  const [requestError, setRequestError] = useState("");
   const controls = useAnimation();
 
-  const currentCard = deck[cardIndex] || null;
   const progressPercent = useMemo(
-    () => Math.min(100, Math.max(0, (timeLeft / GAME_TIME_SECONDS) * 100)),
-    [timeLeft]
+    () => Math.min(100, Math.max(0, (timeLeft / initialTime) * 100)),
+    [initialTime, timeLeft]
   );
 
   const showFeedback = useCallback((text, color) => {
     setFeedback({ text, color });
-    window.setTimeout(() => {
+    if (feedbackTimeoutRef.current) {
+      window.clearTimeout(feedbackTimeoutRef.current);
+    }
+    feedbackTimeoutRef.current = window.setTimeout(() => {
       setFeedback((prev) => (prev.text === text ? { text: "", color: "#0369a1" } : prev));
     }, 850);
   }, []);
 
-  const finishGame = useCallback(
-    (result) => {
-      if (outcome) return;
-      setOutcome(result);
-      controls.stop();
+  const applyPayload = useCallback(
+    (data) => {
+      setScore(data.score);
+      setTimeLeft(data.timeLeft);
+      setInitialTime(data.initialTime || GAME_TIME_SECONDS);
+      setMaxTime(data.maxTime || MAX_TIME_SECONDS);
+      setCurrentCardNumber(data.currentCardNumber || 1);
+      setTotalCards(data.totalCards || 0);
+      setCurrentCard(data.card || null);
+
+      if (data.status === "victory") {
+        setOutcome("success");
+        controls.stop();
+      } else if (data.status === "failure") {
+        setOutcome("failure");
+        controls.stop();
+      } else {
+        setOutcome(null);
+      }
     },
-    [controls, outcome]
+    [controls]
   );
 
+  const startGame = useCallback(async () => {
+    setIsLoading(true);
+    setIsLocked(true);
+    setRequestError("");
+    try {
+      const response = await fetch("/api/wholecake/start", { method: "POST" });
+      const data = await parseApiResponse(response);
+      applyPayload(data);
+      setFeedback({ text: "", color: "#0369a1" });
+      controls.set({ x: 0, y: 0, rotate: 0, opacity: 1 });
+    } catch (error) {
+      setRequestError(error.message);
+      setOutcome("failure");
+    } finally {
+      setIsLoading(false);
+      setIsLocked(false);
+    }
+  }, [applyPayload, controls]);
+
+  const finalizeRound = useCallback(async () => {
+    if (outcome || isLocked) return;
+    setIsLocked(true);
+    try {
+      const response = await fetch("/api/wholecake/finalize", { method: "POST" });
+      const data = await parseApiResponse(response);
+      applyPayload(data);
+    } catch (error) {
+      setRequestError(error.message);
+      setOutcome("failure");
+    } finally {
+      setIsLocked(false);
+    }
+  }, [applyPayload, isLocked, outcome]);
+
   useEffect(() => {
-    if (outcome) return;
+    void startGame();
+    return () => {
+      if (feedbackTimeoutRef.current) {
+        window.clearTimeout(feedbackTimeoutRef.current);
+      }
+    };
+  }, [startGame]);
+
+  useEffect(() => {
+    if (outcome || isLoading) return;
     const timer = window.setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           window.clearInterval(timer);
-          finishGame("failure");
+          void finalizeRound();
           return 0;
         }
         return prev - 1;
@@ -78,45 +133,38 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [finishGame, outcome]);
-
-  useEffect(() => {
-    if (!outcome && cardIndex >= deck.length && deck.length > 0) {
-      finishGame("success");
-    }
-  }, [cardIndex, deck.length, finishGame, outcome]);
-
-  const nextCard = useCallback(() => {
-    setCardIndex((prev) => prev + 1);
-  }, []);
+  }, [finalizeRound, isLoading, outcome]);
 
   const applyChoice = useCallback(
-    (side) => {
-      if (!currentCard || outcome) return;
+    async (side) => {
+      if (!currentCard || outcome || isLocked || isLoading) return;
 
-      const guessedType = side === "left" ? "funcional" : "no-funcional";
-      const isCorrect = guessedType === currentCard.tipo;
+      setIsLocked(true);
+      setRequestError("");
 
-      if (isCorrect) {
-        playSuccess?.();
-        setScore((prev) => prev + 10);
-        setTimeLeft((prev) => Math.min(MAX_TIME_SECONDS, prev + TIME_GAIN_ON_HIT));
-        showFeedback("¡Delicioso!", "#16a34a");
-      } else {
-        playError?.();
-        setTimeLeft((prev) => {
-          const next = Math.max(0, prev - TIME_PENALTY_ON_FAIL);
-          if (next <= 0) {
-            finishGame("failure");
-          }
-          return next;
+      try {
+        const response = await fetch("/api/wholecake/swipe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ side }),
         });
-        showFeedback("¡Sabor amargo!", "#b91c1c");
-      }
+        const data = await parseApiResponse(response);
+        applyPayload(data);
 
-      nextCard();
+        if (data.feedbackTone === "success") {
+          playSuccess?.();
+          showFeedback(data.feedback || "¡Delicioso!", "#16a34a");
+        } else if (data.feedbackTone === "error") {
+          playError?.();
+          showFeedback(data.feedback || "¡Sabor amargo!", "#b91c1c");
+        }
+      } catch (error) {
+        setRequestError(error.message);
+      } finally {
+        setIsLocked(false);
+      }
     },
-    [currentCard, finishGame, nextCard, outcome, playError, playSuccess, showFeedback]
+    [applyPayload, currentCard, isLoading, isLocked, outcome, playError, playSuccess, showFeedback]
   );
 
   useEffect(() => {
@@ -130,17 +178,11 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
 
   const resetGame = useCallback(() => {
     playClick();
-    setDeck(shuffle(REQUIREMENTS_POOL));
-    setCardIndex(0);
-    setScore(0);
-    setTimeLeft(GAME_TIME_SECONDS);
-    setFeedback({ text: "", color: "#0369a1" });
-    setOutcome(null);
-    controls.set({ x: 0, y: 0, rotate: 0, opacity: 1 });
-  }, [controls, playClick]);
+    void startGame();
+  }, [playClick, startGame]);
 
   const handleDragEnd = async (_, info) => {
-    if (outcome || !currentCard) return;
+    if (outcome || !currentCard || isLocked || isLoading) return;
     const offsetX = info.offset.x;
 
     if (offsetX <= -SWIPE_THRESHOLD) {
@@ -199,9 +241,15 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
         </div>
       </div>
 
+      {requestError && (
+        <div className="mt-3 rounded-lg border border-red-300 bg-red-100/80 p-3 text-sm font-semibold text-red-900">
+          {requestError}
+        </div>
+      )}
+
       <div className="mt-3 flex flex-wrap items-center gap-3 text-sm font-black uppercase tracking-[0.08em]">
         <span className="rounded-lg bg-sky-500 px-3 py-2 text-white">Puntaje: {score}</span>
-        <span className="rounded-lg bg-yellow-400 px-3 py-2 text-slate-900">Tarjeta: {Math.min(cardIndex + 1, deck.length)}/{deck.length}</span>
+        <span className="rounded-lg bg-yellow-400 px-3 py-2 text-slate-900">Tarjeta: {Math.min(currentCardNumber, totalCards || 0)}/{totalCards || 0}</span>
         {feedback.text && (
           <span className="rounded-lg px-3 py-2 text-white" style={{ backgroundColor: feedback.color }}>
             {feedback.text}
@@ -219,11 +267,11 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
         <div className="relative flex min-h-[260px] items-center justify-center">
           {currentCard && !outcome ? (
             <motion.div
-              key={`${cardIndex}-${currentCard.texto}`}
+              key={`${currentCard.id}-${currentCardNumber}`}
               className="w-full max-w-md cursor-grab select-none rounded-3xl border-4 border-yellow-300 bg-gradient-to-b from-yellow-100 to-amber-100 p-6 text-center shadow-[0_12px_28px_rgba(0,0,0,0.2)] active:cursor-grabbing"
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.18}
+              dragElastic={isLocked || isLoading ? 0 : 0.18}
               onDragEnd={handleDragEnd}
               animate={controls}
               initial={{ opacity: 0, y: 8, scale: 0.98 }}
@@ -233,12 +281,12 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
               <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-800">Ingrediente Dulce</p>
               <p className="mt-4 text-lg font-black leading-snug text-amber-950">{currentCard.texto}</p>
               <p className="mt-5 text-xs font-bold uppercase tracking-[0.15em] text-amber-700">
-                Desliza a izquierda o derecha
+                {isLoading || isLocked ? "Procesando..." : "Desliza a izquierda o derecha"}
               </p>
             </motion.div>
           ) : (
             <div className="w-full max-w-md rounded-3xl border-4 border-rose-200 bg-white/70 p-6 text-center">
-              <p className="text-lg font-black text-rose-900">Esperando resultado final...</p>
+              <p className="text-lg font-black text-rose-900">{isLoading ? "Cargando tarjetas..." : "Esperando resultado final..."}</p>
             </div>
           )}
         </div>
