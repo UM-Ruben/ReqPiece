@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Anchor, Compass, Lock, Skull, Unlock } from "lucide-react";
-import Isla1Loguetown from "./components/Isla1Loguetown";
-import Isla2Water7 from "./components/Isla2Water7";
-import Isla3Sabaody from "./components/Isla3Sabaody";
-import Isla4Sabaody from "./components/Isla4BigMom";
-import Isla5Wano from "./components/Isla5Wano";
-import Isla6EggHead from "./components/Isla6EggHead";
 import IslandIntro from "./components/IslandIntro";
-import finalImage from "./image/final.png";
+import finalImage from "./image/final.webp";
 import { usePirateAudio } from "./hooks/usePirateAudio";
+
+const Isla1Loguetown = lazy(() => import("./components/Isla1Loguetown"));
+const Isla2Water7 = lazy(() => import("./components/Isla2Water7"));
+const Isla3Sabaody = lazy(() => import("./components/Isla3Sabaody"));
+const Isla4Sabaody = lazy(() => import("./components/Isla4BigMom"));
+const Isla5Wano = lazy(() => import("./components/Isla5Wano"));
+const Isla6EggHead = lazy(() => import("./components/Isla6EggHead"));
 
 const ISLAND_KEYS = ["isla1", "isla2", "isla3", "isla4", "isla5", "isla6"];
 
@@ -160,6 +161,13 @@ export default function App() {
   ];
 
   const unlockedCount = Object.values(unlockedIslands).filter(Boolean).length;
+
+  const islandLoadingFallback = (
+    <div className="mx-auto w-full max-w-3xl rounded-2xl border-2 border-amber-500/40 bg-slate-900/70 px-6 py-10 text-center text-amber-100">
+      <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-300">Navegando...</p>
+      <p className="mt-2 text-base font-semibold">Cargando recursos de la isla.</p>
+    </div>
+  );
 
   useEffect(() => {
     window.localStorage.setItem(UNLOCKED_ISLANDS_STORAGE_KEY, JSON.stringify(unlockedIslands));
@@ -345,13 +353,15 @@ export default function App() {
                 playClick={playClick}
               />
             ) : (
-              <Isla1Loguetown
-                onBackToMenu={backToMenu}
-                onIslandCompleted={completeIsland1}
-                playClick={playClick}
-                playError={playError}
-                playSuccess={playSuccess}
-              />
+              <Suspense fallback={islandLoadingFallback}>
+                <Isla1Loguetown
+                  onBackToMenu={backToMenu}
+                  onIslandCompleted={completeIsland1}
+                  playClick={playClick}
+                  playError={playError}
+                  playSuccess={playSuccess}
+                />
+              </Suspense>
             )}
           </motion.div>
         )}
@@ -369,16 +379,18 @@ export default function App() {
                 playClick={playClick}
               />
             ) : (
-              <Isla2Water7
-                onBackToMenu={backToMenu}
-                onIslandCompleted={() => {
-                  setUnlockedIslands((prev) => ({ ...prev, isla3: true }));
-                  setCurrentScreen("menu");
-                }}
-                playClick={playClick}
-                playError={playError}
-                playSuccess={playSuccess}
-              />
+              <Suspense fallback={islandLoadingFallback}>
+                <Isla2Water7
+                  onBackToMenu={backToMenu}
+                  onIslandCompleted={() => {
+                    setUnlockedIslands((prev) => ({ ...prev, isla3: true }));
+                    setCurrentScreen("menu");
+                  }}
+                  playClick={playClick}
+                  playError={playError}
+                  playSuccess={playSuccess}
+                />
+              </Suspense>
             )}
           </motion.div>
         )}
@@ -396,16 +408,18 @@ export default function App() {
                 playClick={playClick}
               />
             ) : (
-              <Isla3Sabaody
-                onBackToMenu={backToMenu}
-                onIslandCompleted={() => {
-                  setUnlockedIslands((prev) => ({ ...prev, isla4: true }));
-                  setCurrentScreen("menu");
-                }}
-                playClick={playClick}
-                playError={playError}
-                playSuccess={playSuccess}
-              />
+              <Suspense fallback={islandLoadingFallback}>
+                <Isla3Sabaody
+                  onBackToMenu={backToMenu}
+                  onIslandCompleted={() => {
+                    setUnlockedIslands((prev) => ({ ...prev, isla4: true }));
+                    setCurrentScreen("menu");
+                  }}
+                  playClick={playClick}
+                  playError={playError}
+                  playSuccess={playSuccess}
+                />
+              </Suspense>
             )}
           </motion.div>
         )}
@@ -423,16 +437,18 @@ export default function App() {
                 playClick={playClick}
               />
             ) : (
-              <Isla4Sabaody
-                onBackToMenu={backToMenu}
-                onIslandCompleted={() => {
-                  setUnlockedIslands((prev) => ({ ...prev, isla5: true }));
-                  setCurrentScreen("menu");
-                }}
-                playClick={playClick}
-                playError={playError}
-                playSuccess={playSuccess}
-              />
+              <Suspense fallback={islandLoadingFallback}>
+                <Isla4Sabaody
+                  onBackToMenu={backToMenu}
+                  onIslandCompleted={() => {
+                    setUnlockedIslands((prev) => ({ ...prev, isla5: true }));
+                    setCurrentScreen("menu");
+                  }}
+                  playClick={playClick}
+                  playError={playError}
+                  playSuccess={playSuccess}
+                />
+              </Suspense>
             )}
           </motion.div>
         )}
@@ -450,16 +466,18 @@ export default function App() {
                 playClick={playClick}
               />
             ) : (
-              <Isla5Wano
-                onBackToMenu={backToMenu}
-                onIslandCompleted={() => {
-                  setUnlockedIslands((prev) => ({ ...prev, isla6: true }));
-                  setCurrentScreen("menu");
-                }}
-                playClick={playClick}
-                playError={playError}
-                playSuccess={playSuccess}
-              />
+              <Suspense fallback={islandLoadingFallback}>
+                <Isla5Wano
+                  onBackToMenu={backToMenu}
+                  onIslandCompleted={() => {
+                    setUnlockedIslands((prev) => ({ ...prev, isla6: true }));
+                    setCurrentScreen("menu");
+                  }}
+                  playClick={playClick}
+                  playError={playError}
+                  playSuccess={playSuccess}
+                />
+              </Suspense>
             )}
           </motion.div>
         )}
@@ -477,15 +495,17 @@ export default function App() {
                 playClick={playClick}
               />
             ) : (
-              <Isla6EggHead
-                onBackToMenu={backToMenu}
-                onIslandCompleted={() => {
-                  setCurrentScreen("victory");
-                }}
-                playClick={playClick}
-                playError={playError}
-                playSuccess={playSuccess}
-              />
+              <Suspense fallback={islandLoadingFallback}>
+                <Isla6EggHead
+                  onBackToMenu={backToMenu}
+                  onIslandCompleted={() => {
+                    setCurrentScreen("victory");
+                  }}
+                  playClick={playClick}
+                  playError={playError}
+                  playSuccess={playSuccess}
+                />
+              </Suspense>
             )}
           </motion.div>
         )}

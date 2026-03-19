@@ -1,11 +1,17 @@
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import imageFail from "../image/isla5KaidoFallo.png";
-import imageSuccess from "../image/isla5KaidoAcierto.png";
+import imageFail from "../image/isla5KaidoFallo.webp";
+import imageSuccess from "../image/isla5KaidoAcierto.webp";
+import { apiFetch } from "../lib/api";
 
 const TOTAL_TIME = 45;
 
 async function parseApiResponse(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("La API no esta disponible. Inicia tambien el servidor backend (npm run start:api).");
+  }
+
   let payload = null;
   try {
     payload = await response.json();
@@ -15,6 +21,9 @@ async function parseApiResponse(response) {
 
   if (!response.ok) {
     throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Respuesta invalida del servidor del minijuego.");
   }
 
   return payload;
@@ -82,7 +91,7 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
     setIsLoading(true);
     setRequestError("");
     try {
-      const response = await fetch("/api/wano/start", { method: "POST" });
+      const response = await apiFetch("/api/wano/start", { method: "POST" });
       const data = await parseApiResponse(response);
       applyPayload(data);
       setTimeLeft(data.totalTime || TOTAL_TIME);
@@ -110,7 +119,7 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
         if (prev <= 1) {
           window.clearInterval(timer);
           setStatus("failure");
-          void fetch("/api/wano/finalize", { method: "POST" }).catch(() => {
+          void apiFetch("/api/wano/finalize", { method: "POST" }).catch(() => {
             // ignore network finalize errors; local status is already failure
           });
           return 0;
@@ -137,7 +146,7 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
     playClick?.();
     setRequestError("");
     try {
-      const response = await fetch("/api/wano/cut", {
+      const response = await apiFetch("/api/wano/cut", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requirementId: requirement.id, token }),

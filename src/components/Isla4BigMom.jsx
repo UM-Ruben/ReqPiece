@@ -1,13 +1,19 @@
 import { motion, useAnimation } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import imageFail from "../image/isla4BigMomFallo.png";
-import imageSuccess from "../image/isla4BigMomAcierto.png";
+import imageFail from "../image/isla4BigMomFallo.webp";
+import imageSuccess from "../image/isla4BigMomAcierto.webp";
+import { apiFetch } from "../lib/api";
 
 const GAME_TIME_SECONDS = 40;
 const MAX_TIME_SECONDS = 60;
 const SWIPE_THRESHOLD = 120;
 
 async function parseApiResponse(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("La API no esta disponible. Inicia tambien el servidor backend (npm run start:api).");
+  }
+
   let payload = null;
   try {
     payload = await response.json();
@@ -17,6 +23,9 @@ async function parseApiResponse(response) {
 
   if (!response.ok) {
     throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Respuesta invalida del servidor del minijuego.");
   }
 
   return payload;
@@ -81,7 +90,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
     setIsLocked(true);
     setRequestError("");
     try {
-      const response = await fetch("/api/wholecake/start", { method: "POST" });
+      const response = await apiFetch("/api/wholecake/start", { method: "POST" });
       const data = await parseApiResponse(response);
       applyPayload(data);
       setFeedback({ text: "", color: "#0369a1" });
@@ -99,7 +108,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
     if (outcome || isLocked) return;
     setIsLocked(true);
     try {
-      const response = await fetch("/api/wholecake/finalize", { method: "POST" });
+      const response = await apiFetch("/api/wholecake/finalize", { method: "POST" });
       const data = await parseApiResponse(response);
       applyPayload(data);
     } catch (error) {
@@ -143,7 +152,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
       setRequestError("");
 
       try {
-        const response = await fetch("/api/wholecake/swipe", {
+        const response = await apiFetch("/api/wholecake/swipe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ side }),

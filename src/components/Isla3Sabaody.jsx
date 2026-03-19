@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Compass } from "lucide-react";
-import imageFail from "../image/isla3Fallo.png";
-import imageSuccess from "../image/isla3Acierto.png";
+import imageFail from "../image/isla3Fallo.webp";
+import imageSuccess from "../image/isla3Acierto.webp";
+import { apiFetch } from "../lib/api";
 
 const DEFAULT_GAME_TIME_SECONDS = 45;
 const MAX_LIVES = 3;
@@ -28,6 +29,11 @@ function wrapTextLines(ctx, text, maxWidth) {
 }
 
 async function parseApiResponse(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("La API no esta disponible. Inicia tambien el servidor backend (npm run start:api).");
+  }
+
   let payload = null;
   try {
     payload = await response.json();
@@ -37,6 +43,9 @@ async function parseApiResponse(response) {
 
   if (!response.ok) {
     throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Respuesta invalida del servidor del minijuego.");
   }
 
   return payload;
@@ -115,7 +124,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
       if (!nextEvent) break;
 
       try {
-        const response = await fetch("/api/sabaody/event", {
+        const response = await apiFetch("/api/sabaody/event", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(nextEvent),
@@ -160,7 +169,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
     if (spawnInFlightRef.current || gameEndedRef.current || !running || outcome) return;
     spawnInFlightRef.current = true;
     try {
-      const response = await fetch("/api/sabaody/spawn", {
+      const response = await apiFetch("/api/sabaody/spawn", {
         method: "POST",
       });
       const data = await parseApiResponse(response);
@@ -191,7 +200,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
 
   const finalizeRound = useCallback(async () => {
     try {
-      const response = await fetch("/api/sabaody/finalize", {
+      const response = await apiFetch("/api/sabaody/finalize", {
         method: "POST",
       });
       const data = await parseApiResponse(response);
@@ -208,7 +217,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
     setIsLoading(true);
     setRequestError("");
     try {
-      const response = await fetch("/api/sabaody/start", {
+      const response = await apiFetch("/api/sabaody/start", {
         method: "POST",
       });
       const data = await parseApiResponse(response);

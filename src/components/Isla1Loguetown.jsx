@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { motion, Reorder } from "framer-motion";
 import { AlertTriangle, ArrowDown, CheckCircle2, Compass, GripVertical, Heart, Map } from "lucide-react";
-import imageFail from "../image/isla1Fallo.png";
-import imageSuccess from "../image/isla1Acierto.png";
+import imageFail from "../image/isla1Fallo.webp";
+import imageSuccess from "../image/isla1Acierto.webp";
+import { apiFetch } from "../lib/api";
 
 const MAX_LIVES = 3;
 
 async function parseLoguetownResponse(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("La API no esta disponible. Inicia tambien el servidor backend (npm run start:api).");
+  }
+
   let payload = null;
   try {
     payload = await response.json();
@@ -15,6 +21,9 @@ async function parseLoguetownResponse(response) {
   }
   if (!response.ok) {
     throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Respuesta invalida del servidor del minijuego.");
   }
   return payload;
 }
@@ -39,7 +48,7 @@ export default function Isla1Loguetown({
     setIsLocked(true);
     setRequestError("");
     try {
-      const response = await fetch("/api/loguetown/start", { method: "POST" });
+      const response = await apiFetch("/api/loguetown/start", { method: "POST" });
       const data = await parseLoguetownResponse(response);
       setCards(data.phases);
       setLives(data.lives);
@@ -62,7 +71,7 @@ export default function Isla1Loguetown({
     playClick();
     setIsLocked(true);
     try {
-      const response = await fetch("/api/loguetown/check", {
+      const response = await apiFetch("/api/loguetown/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ order: cards.map((p) => p.id) }),

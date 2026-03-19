@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Compass, Cpu, Heart, User } from "lucide-react";
-import imageFail from "../image/isla2Fallo.png";
-import imageSuccess from "../image/isla2Acierto.png";
+import imageFail from "../image/isla2Fallo.webp";
+import imageSuccess from "../image/isla2Acierto.webp";
+import { apiFetch } from "../lib/api";
 
 const MAX_LIVES = 5;
 
 async function parseResponse(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("La API no esta disponible. Inicia tambien el servidor backend (npm run start:api).");
+  }
+
   let payload = null;
   try {
     payload = await response.json();
@@ -17,6 +23,9 @@ async function parseResponse(response) {
   if (!response.ok) {
     const message = payload?.error || "No se pudo conectar con el servidor del minijuego.";
     throw new Error(message);
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Respuesta invalida del servidor del minijuego.");
   }
 
   return payload;
@@ -66,7 +75,7 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playClick
     setFeedback({ type: "info", message: "Conectando con el servidor..." });
 
     try {
-      const response = await fetch("/api/water7/start", {
+      const response = await apiFetch("/api/water7/start", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -101,7 +110,7 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playClick
     setIsLocked(true);
 
     try {
-      const response = await fetch("/api/water7/answer", {
+      const response = await apiFetch("/api/water7/answer", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

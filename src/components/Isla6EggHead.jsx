@@ -1,10 +1,16 @@
 import { motion } from "framer-motion";
 import { AlertTriangle, Cpu, Database, Link as LinkIcon, ShieldAlert, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import imageFail from "../image/isla6VegapunkFallo.png";
-import imageSuccess from "../image/isla6VegapunkAcierto.png";
+import imageFail from "../image/isla6VegapunkFallo.webp";
+import imageSuccess from "../image/isla6VegapunkAcierto.webp";
+import { apiFetch } from "../lib/api";
 
 async function parseApiResponse(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("La API no esta disponible. Inicia tambien el servidor backend (npm run start:api).");
+  }
+
   let payload = null;
   try {
     payload = await response.json();
@@ -14,6 +20,9 @@ async function parseApiResponse(response) {
 
   if (!response.ok) {
     throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Respuesta invalida del servidor del minijuego.");
   }
 
   return payload;
@@ -78,7 +87,7 @@ export default function Isla6EggHead({ onIslandCompleted, onBackToMenu, playClic
     setIsLoading(true);
     setRequestError("");
     try {
-      const response = await fetch("/api/egghead/start", {
+      const response = await apiFetch("/api/egghead/start", {
         method: "POST",
       });
       const data = await parseApiResponse(response);
@@ -116,7 +125,7 @@ export default function Isla6EggHead({ onIslandCompleted, onBackToMenu, playClic
     playClick();
     setRequestError("");
     try {
-      const response = await fetch("/api/egghead/select", {
+      const response = await apiFetch("/api/egghead/select", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reqId: req.id }),
@@ -133,7 +142,7 @@ export default function Isla6EggHead({ onIslandCompleted, onBackToMenu, playClic
     setRequestError("");
 
     try {
-      const response = await fetch("/api/egghead/artifact", {
+      const response = await apiFetch("/api/egghead/artifact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ artifactId: artifact.id }),

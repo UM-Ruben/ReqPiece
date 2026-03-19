@@ -11,7 +11,7 @@ function safePlay(audioInstance) {
   if (!audioInstance) return;
   audioInstance.currentTime = 0;
   audioInstance.play().catch(() => {
-    // Avoid unhandled promise rejection if browser blocks autoplay.
+
   });
 }
 
