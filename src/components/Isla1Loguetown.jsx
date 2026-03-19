@@ -10,7 +10,7 @@ const MAX_LIVES = 3;
 async function parseLoguetownResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
-    throw new Error("La API no esta disponible. Inicia tambien el servidor backend (npm run start:api).");
+    throw new Error("La API no esta disponible temporalmente. Reintenta en unos segundos.");
   }
 
   let payload = null;
@@ -48,7 +48,11 @@ export default function Isla1Loguetown({
     setIsLocked(true);
     setRequestError("");
     try {
-      const response = await apiFetch("/api/loguetown/start", { method: "POST" });
+      let response = await apiFetch("/api/loguetown/start", { method: "POST" });
+      if (response.status === 404 || response.status === 405) {
+        // Some deployments rewrite POST /api routes; retry as GET to keep game start resilient.
+        response = await apiFetch("/api/loguetown/start", { method: "GET" });
+      }
       const data = await parseLoguetownResponse(response);
       setCards(data.phases);
       setLives(data.lives);

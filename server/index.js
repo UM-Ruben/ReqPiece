@@ -214,7 +214,7 @@ function shuffledPublicPhases() {
   return shuffle(LOGUETOWN_PHASES.map(({ id, label, description }) => ({ id, label, description })));
 }
 
-app.post("/api/loguetown/start", (req, res) => {
+function sendLoguetownStart(req, res) {
   initLoguetownGame(req.session);
   const game = req.session.loguetown;
   res.json({
@@ -223,7 +223,10 @@ app.post("/api/loguetown/start", (req, res) => {
     phases: shuffledPublicPhases(),
     feedback: "Arrastra las tarjetas para ordenar las fases.",
   });
-});
+}
+
+app.post("/api/loguetown/start", sendLoguetownStart);
+app.get("/api/loguetown/start", sendLoguetownStart);
 
 app.post("/api/loguetown/check", (req, res) => {
   const game = getOrCreateLoguetownGame(req);
