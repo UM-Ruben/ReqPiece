@@ -856,6 +856,12 @@ if (fs.existsSync(DIST_DIR)) {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`ReqPiece backend listening on http://localhost:${PORT}`);
-});
+const runningOnVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
+
+if (!runningOnVercel) {
+  app.listen(PORT, () => {
+    console.log(`ReqPiece backend listening on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
