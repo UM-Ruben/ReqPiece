@@ -76,9 +76,12 @@ app.use(
   })
 );
 
-app.get("/api/health", (_req, res) => {
+function sendHealth(_req, res) {
   res.json({ ok: true, service: "reqpiece-api" });
-});
+}
+
+app.get("/api/health", sendHealth);
+app.get("/health", sendHealth);
 
 function shuffle(items) {
   const copied = [...items];
@@ -227,8 +230,10 @@ function sendLoguetownStart(req, res) {
 
 app.post("/api/loguetown/start", sendLoguetownStart);
 app.get("/api/loguetown/start", sendLoguetownStart);
+app.post("/loguetown/start", sendLoguetownStart);
+app.get("/loguetown/start", sendLoguetownStart);
 
-app.post("/api/loguetown/check", (req, res) => {
+function handleLoguetownCheck(req, res) {
   const game = getOrCreateLoguetownGame(req);
 
   if (game.status !== "in_progress") {
@@ -277,7 +282,10 @@ app.post("/api/loguetown/check", (req, res) => {
     lives: game.lives,
     feedback: `¡Cuidado capitán! Hemos chocado contra un arrecife. Nos quedan ${game.lives} vidas.`,
   });
-});
+}
+
+app.post("/api/loguetown/check", handleLoguetownCheck);
+app.post("/loguetown/check", handleLoguetownCheck);
 
 // ── Isla 3: Sabaody ───────────────────────────────────────────────────────
 
