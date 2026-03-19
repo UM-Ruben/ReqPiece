@@ -76,6 +76,10 @@ app.use(
   })
 );
 
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true, service: "reqpiece-api" });
+});
+
 function shuffle(items) {
   const copied = [...items];
   for (let i = copied.length - 1; i > 0; i -= 1) {
