@@ -157,7 +157,13 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
       const response = await apiFetch("/api/wano/cut", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requirementId: requirement.id, token }),
+        body: JSON.stringify({
+          requirementId: requirement.id,
+          token,
+          lives,
+          score,
+          resolvedMap,
+        }),
       });
       const data = await parseApiResponse(response);
       applyPayload(data);

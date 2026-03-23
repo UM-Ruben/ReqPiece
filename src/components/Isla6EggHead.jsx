@@ -128,7 +128,12 @@ export default function Isla6EggHead({ onIslandCompleted, onBackToMenu, playClic
       const response = await apiFetch("/api/egghead/select", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reqId: req.id }),
+        body: JSON.stringify({
+          reqId: req.id,
+          selectedReqId,
+          linksByReq,
+          errors,
+        }),
       });
       const data = await parseApiResponse(response);
       applyPayload(data);
@@ -145,7 +150,12 @@ export default function Isla6EggHead({ onIslandCompleted, onBackToMenu, playClic
       const response = await apiFetch("/api/egghead/artifact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ artifactId: artifact.id }),
+        body: JSON.stringify({
+          artifactId: artifact.id,
+          selectedReqId,
+          linksByReq,
+          errors,
+        }),
       });
       const data = await parseApiResponse(response);
       const previousErrors = errors;
