@@ -339,12 +339,12 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
           animate={{ opacity: 1 }}
           className="absolute inset-0 z-30 flex items-center justify-center bg-zinc-950/80 p-4"
         >
-          <div className="mx-auto w-fit max-w-full overflow-hidden rounded-2xl border-4 border-emerald-400/90 bg-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
-            <div className="mx-auto w-fit max-w-full bg-slate-900/80 p-1">
+          <div className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border-4 border-emerald-400/90 bg-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
+            <div className="bg-gradient-to-b from-slate-900 to-slate-800 p-2">
               <img
                 src={imageSuccess}
                 alt="Victoria en Wano"
-                className="block h-auto max-h-[58vh] w-auto max-w-[min(92vw,960px)] object-contain"
+                className="mx-auto block h-auto max-h-[62vh] w-full object-contain"
               />
             </div>
             <div className="space-y-3 p-5">
