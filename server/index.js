@@ -491,7 +491,6 @@ app.post("/api/sabaody/event", (req, res) => {
       feedbackTone = "error";
     }
   } else if (barrelKind === "problema") {
-    game.score += 10;
     feedback = "";
     feedbackTone = "neutral";
   } else {

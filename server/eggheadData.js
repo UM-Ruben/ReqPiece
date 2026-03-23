@@ -15,7 +15,7 @@ export const EGGHEAD_REQUIREMENTS = [
     name: "Gestión de catálogo",
     status: "estable",
     brief: "El catálogo debe poder consultarse y mantenerse desde la capa funcional del sistema.",
-    affectedArtifacts: ["art-4", "art-5"],
+    affectedArtifacts: ["art-6", "art-7", "art-8"],
   },
   {
     id: "req-03",
@@ -60,5 +60,20 @@ export const EGGHEAD_ARTIFACTS = [
     id: "art-5",
     name: "API: Checkout & Gateway",
     description: "Orquesta checkout, comunicación con servicios externos y confirmación final.",
+  },
+  {
+    id: "art-6",
+    name: "Tabla DB: Productos",
+    description: "Persiste la información del catálogo, precios, stock y detalles de cada producto.",
+  },
+  {
+    id: "art-7",
+    name: "API: Catalog & Inventory",
+    description: "Permite consultar el catálogo desde el frontend y ofrece endpoints para el mantenimiento (CRUD) de productos.",
+  },
+  {
+    id: "art-8",
+    name: "Componente ProductManager.jsx",
+    description: "Interfaz gráfica (Backoffice/Admin) donde se mantiene y consulta el catálogo de productos.",
   },
 ];
