@@ -8,7 +8,7 @@ import { apiFetch } from "../lib/api";
 const MAX_LIVES = 3;
 const DEFAULT_MIN_SCORE_TO_WIN = 180;
 const SHOT_AUDIO_POOL_SIZE = 4;
-const SHOT_AUDIO_VOLUME = 0.5;
+const SHOT_AUDIO_VOLUME = 0.1;
 
 function wrapTextLines(ctx, text, maxWidth) {
   const words = text.split(" ");
