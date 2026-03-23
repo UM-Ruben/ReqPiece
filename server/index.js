@@ -690,6 +690,8 @@ app.post("/api/wholecake/swipe", (req, res) => {
     feedback = "¡Delicioso!";
     feedbackTone = "success";
     game.cardIndex += 1;
+    // Keep counters aligned in case of serverless recovery drift.
+    game.correctCount = Math.max(game.correctCount, game.cardIndex);
   } else {
     game.timeLeft = Math.max(0, game.timeLeft - WHOLECAKE_TIME_PENALTY_ON_FAIL);
     feedback = "¡Sabor amargo! Debes acertar las 17 tarjetas para ganar.";
@@ -700,7 +702,7 @@ app.post("/api/wholecake/swipe", (req, res) => {
 
   if (game.timeLeft <= 0) {
     game.status = "failure";
-  } else if (game.correctCount >= game.totalCards) {
+  } else if (game.correctCount >= game.totalCards || game.cardIndex >= game.deck.length) {
     game.status = "victory";
   }
 
@@ -712,7 +714,8 @@ app.post("/api/wholecake/finalize", (req, res) => {
   syncWholeCakeTimer(game);
 
   if (game.status === "in_progress") {
-    game.status = game.correctCount >= (game.totalCards || game.deck.length) ? "victory" : "failure";
+    const totalCards = game.totalCards || game.deck.length;
+    game.status = game.correctCount >= totalCards || game.cardIndex >= totalCards ? "victory" : "failure";
   }
 
   res.json(buildWholeCakePayload(game));
