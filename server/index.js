@@ -550,9 +550,9 @@ function syncWholeCakeTimer(game) {
 }
 
 function initWholeCakeGame(sessionObj) {
-  const orderedDeck = WHOLECAKE_REQUIREMENTS_POOL.map((c) => ({ ...c }));
+  const shuffledDeck = shuffle(WHOLECAKE_REQUIREMENTS_POOL.map((c) => ({ ...c })));
   sessionObj.wholecake = {
-    deck: orderedDeck,
+    deck: shuffledDeck,
     cardIndex: 0,
     score: 0,
     timeLeft: WHOLECAKE_GAME_TIME_SECONDS,

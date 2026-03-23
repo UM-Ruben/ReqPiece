@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const DEFAULT_SOUNDS = {
   click: "/audio/click.wav",
@@ -15,13 +15,35 @@ function safePlay(audioInstance) {
   });
 }
 
+function clampVolume(value) {
+  return Math.min(1, Math.max(0, Number(value) || 0));
+}
+
 export function usePirateAudio(customUrls = {}) {
   const urls = useMemo(() => ({ ...DEFAULT_SOUNDS, ...customUrls }), [customUrls]);
+  const [masterVolume, setMasterVolumeState] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
 
   const clickAudio = useMemo(() => new Audio(urls.click), [urls.click]);
   const errorAudio = useMemo(() => new Audio(urls.error), [urls.error]);
   const successAudio = useMemo(() => new Audio(urls.success), [urls.success]);
   const backgroundAudio = useMemo(() => new Audio(urls.background), [urls.background]);
+
+  const setMasterVolume = (value) => {
+    setMasterVolumeState(clampVolume(value));
+  };
+
+  const increaseVolume = () => {
+    setMasterVolumeState((prev) => clampVolume(prev + 0.1));
+  };
+
+  const decreaseVolume = () => {
+    setMasterVolumeState((prev) => clampVolume(prev - 0.1));
+  };
+
+  const toggleMute = () => {
+    setIsMuted((prev) => !prev);
+  };
 
   useEffect(() => {
     clickAudio.preload = "auto";
@@ -29,7 +51,6 @@ export function usePirateAudio(customUrls = {}) {
     successAudio.preload = "auto";
     backgroundAudio.preload = "auto";
     backgroundAudio.loop = true;
-    backgroundAudio.volume = 0.2;
 
     const startBackgroundMusic = () => {
       backgroundAudio.play().catch(() => {
@@ -58,6 +79,14 @@ export function usePirateAudio(customUrls = {}) {
     };
   }, [backgroundAudio, clickAudio, errorAudio, successAudio]);
 
+  useEffect(() => {
+    const effectiveVolume = isMuted ? 0 : masterVolume;
+    clickAudio.volume = 0.55 * effectiveVolume;
+    errorAudio.volume = 0.55 * effectiveVolume;
+    successAudio.volume = 0.55 * effectiveVolume;
+    backgroundAudio.volume = 0.2 * effectiveVolume;
+  }, [backgroundAudio, clickAudio, errorAudio, isMuted, masterVolume, successAudio]);
+
   const playClick = () => safePlay(clickAudio);
   const playError = () => safePlay(errorAudio);
   const playSuccess = () => safePlay(successAudio);
@@ -66,5 +95,12 @@ export function usePirateAudio(customUrls = {}) {
     playClick,
     playError,
     playSuccess,
+    masterVolume,
+    setMasterVolume,
+    isMuted,
+    setIsMuted,
+    increaseVolume,
+    decreaseVolume,
+    toggleMute,
   };
 }
