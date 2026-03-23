@@ -139,7 +139,7 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playClick
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ optionId, questionId: currentDialog.id }),
+        body: JSON.stringify({ optionId, questionId: currentDialog.id, lives }),
       });
 
       const data = await parseResponse(response);
