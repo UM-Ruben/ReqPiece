@@ -395,7 +395,13 @@ app.post("/api/sabaody/event", (req, res) => {
     });
   }
 
-  const { barrelId, eventType } = req.body || {};
+  const {
+    barrelId,
+    eventType,
+    barrelText,
+    score: clientScore,
+    lives: clientLives,
+  } = req.body || {};
   if (!barrelId || typeof barrelId !== "string") {
     return res.status(400).json({ error: "barrelId es obligatorio." });
   }
@@ -404,10 +410,49 @@ app.post("/api/sabaody/event", (req, res) => {
   }
 
   const barrelType = game.barrels[barrelId];
-  if (!barrelType) {
-    return res.status(404).json({ error: "Barril no encontrado o ya procesado." });
+  let barrelInfo = barrelType;
+
+  if (!barrelInfo) {
+    const looksLikeFreshSession =
+      game.status === "in_progress" &&
+      game.score === 0 &&
+      game.lives === SABAODY_MAX_LIVES &&
+      Object.keys(game.barrels).length === 0 &&
+      game.retryBarrels.length === 0;
+
+    const recoveredEntry =
+      typeof barrelText === "string"
+        ? SABAODY_BARREL_POOL.find((entry) => entry.texto === barrelText)
+        : null;
+
+    if (looksLikeFreshSession && recoveredEntry) {
+      if (Number.isInteger(clientScore)) {
+        game.score = Math.max(0, clientScore);
+      }
+      if (Number.isInteger(clientLives)) {
+        game.lives = Math.max(0, Math.min(SABAODY_MAX_LIVES, clientLives));
+      }
+      if (game.lives <= 0) {
+        game.status = "failure";
+      }
+
+      barrelInfo = {
+        tipo: recoveredEntry.tipo,
+        texto: recoveredEntry.texto,
+      };
+    }
   }
-  const barrelInfo = barrelType;
+
+  if (!barrelInfo) {
+    return res.json(
+      saabodyStatePayload(game, {
+        stale: true,
+        feedback: "Evento de barril desfasado. Sigue jugando.",
+        feedbackTone: "neutral",
+      })
+    );
+  }
+
   const barrelKind = barrelInfo.tipo;
   delete game.barrels[barrelId];
 

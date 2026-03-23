@@ -157,9 +157,15 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
   }, [finishGame, playError, playSuccess, showFeedback]);
 
   const enqueueBarrelEvent = useCallback(
-    (barrelId, eventType) => {
+    (barrelId, eventType, barrelText) => {
       if (gameEndedRef.current) return;
-      pendingEventsRef.current.push({ barrelId, eventType });
+      pendingEventsRef.current.push({
+        barrelId,
+        eventType,
+        barrelText,
+        score: scoreRef.current,
+        lives: livesRef.current,
+      });
       void flushEventsQueue();
     },
     [flushEventsQueue]
@@ -325,7 +331,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
         barrel.y += barrel.vy * dt;
 
         if (barrel.y + barrel.h >= deckY) {
-          enqueueBarrelEvent(barrel.id, "land");
+          enqueueBarrelEvent(barrel.id, "land", barrel.texto);
           continue;
         }
 
@@ -412,7 +418,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
 
     const barrel = barrelsRef.current[hitIndex];
     barrelsRef.current.splice(hitIndex, 1);
-    enqueueBarrelEvent(barrel.id, "hit");
+    enqueueBarrelEvent(barrel.id, "hit", barrel.texto);
   }, [enqueueBarrelEvent, outcome, running]);
 
   const resetIsland = useCallback(() => {
