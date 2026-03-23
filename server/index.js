@@ -613,6 +613,9 @@ app.post("/api/wholecake/swipe", (req, res) => {
   const {
     side,
     cardId,
+    score: clientScore,
+    timeLeft: clientTimeLeft,
+    correctCount: clientCorrectCount,
     currentCardNumber: clientCardNumber,
   } = req.body || {};
   if (side !== "left" && side !== "right" && side !== "up") {
@@ -622,6 +625,39 @@ app.post("/api/wholecake/swipe", (req, res) => {
   let currentCard = game.deck[game.cardIndex];
 
   if (typeof cardId === "string" && currentCard && currentCard.id !== cardId) {
+    const looksLikeFreshSession =
+      game.status === "in_progress" &&
+      game.cardIndex === 0 &&
+      game.correctCount === 0 &&
+      game.score === 0 &&
+      game.timeLeft >= WHOLECAKE_GAME_TIME_SECONDS - 1;
+
+    if (looksLikeFreshSession) {
+      const recoveredIndex = game.deck.findIndex((card) => card.id === cardId);
+      if (recoveredIndex >= 0) {
+        game.cardIndex = recoveredIndex;
+
+        const recoveredCorrectFromScore = Number.isInteger(clientScore)
+          ? Math.max(0, Math.min(recoveredIndex, Math.floor(clientScore / 10)))
+          : recoveredIndex;
+
+        const recoveredCorrect = Number.isInteger(clientCorrectCount)
+          ? Math.max(0, Math.min(recoveredIndex, clientCorrectCount))
+          : recoveredCorrectFromScore;
+
+        game.correctCount = recoveredCorrect;
+        game.score = game.correctCount * 10;
+
+        if (Number.isInteger(clientTimeLeft)) {
+          game.timeLeft = Math.max(0, Math.min(WHOLECAKE_MAX_TIME_SECONDS, clientTimeLeft));
+        }
+
+        game.lastTickAtMs = Date.now();
+        currentCard = game.deck[game.cardIndex] || null;
+      }
+    }
+
+    if (!currentCard || currentCard.id !== cardId) {
     return res.json(
       buildWholeCakePayload(
         game,
@@ -631,6 +667,7 @@ app.post("/api/wholecake/swipe", (req, res) => {
         "neutral"
       )
     );
+    }
   }
 
   if (!currentCard) {

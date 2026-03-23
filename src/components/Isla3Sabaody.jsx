@@ -257,7 +257,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
     shotAudioPoolRef.current = Array.from({ length: SHOT_AUDIO_POOL_SIZE }, () => {
       const audio = new Audio("/audio/disparo.mp3");
       audio.preload = "auto";
-      audio.volume = 1;
+      audio.volume = 0.5;
       return audio;
     });
     shotAudioIndexRef.current = 0;

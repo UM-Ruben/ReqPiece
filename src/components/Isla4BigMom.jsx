@@ -167,6 +167,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
             cardId: currentCard.id,
             score,
             timeLeft,
+            correctCount,
             currentCardNumber,
           }),
         });
@@ -186,7 +187,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
         setIsLocked(false);
       }
     },
-    [applyPayload, currentCard, isLoading, isLocked, outcome, playError, playSuccess, showFeedback]
+    [applyPayload, correctCount, currentCard, currentCardNumber, isLoading, isLocked, outcome, playError, playSuccess, score, showFeedback, timeLeft]
   );
 
   useEffect(() => {
