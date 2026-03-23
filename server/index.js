@@ -152,15 +152,42 @@ app.post("/api/water7/answer", (req, res) => {
     });
   }
 
-  const { optionId } = req.body || {};
+  const { optionId, questionId, lives: clientLives } = req.body || {};
   if (!optionId || typeof optionId !== "string") {
     return res.status(400).json({ error: "optionId es obligatorio." });
   }
 
-  const question = WATER7_DIALOGS[game.index];
+  let question = WATER7_DIALOGS[game.index];
   if (!question) {
     game.status = "failure";
     return res.status(500).json({ error: "Estado de partida inválido." });
+  }
+
+  if (typeof questionId === "string" && questionId !== question.id) {
+    const looksLikeFreshSession =
+      game.status === "in_progress" && game.index === 0 && game.lives === MAX_LIVES;
+
+    if (looksLikeFreshSession) {
+      const recoveredIndex = WATER7_DIALOGS.findIndex((item) => item.id === questionId);
+      if (recoveredIndex >= 0) {
+        game.index = recoveredIndex;
+        if (Number.isInteger(clientLives)) {
+          game.lives = Math.max(0, Math.min(MAX_LIVES, clientLives));
+        }
+        if (game.lives <= 0) {
+          game.status = "failure";
+        }
+        question = WATER7_DIALOGS[game.index];
+      }
+    }
+
+    if (!question || questionId !== question.id) {
+    return res.json({
+      correct: false,
+      stale: true,
+      ...buildGamePayload(game, "Tu respuesta llegó tarde para otra pregunta. Inténtalo de nuevo."),
+    });
+    }
   }
 
   const isCorrect = question.correctOptionId === optionId;
@@ -368,7 +395,13 @@ app.post("/api/sabaody/event", (req, res) => {
     });
   }
 
-  const { barrelId, eventType } = req.body || {};
+  const {
+    barrelId,
+    eventType,
+    barrelText,
+    score: clientScore,
+    lives: clientLives,
+  } = req.body || {};
   if (!barrelId || typeof barrelId !== "string") {
     return res.status(400).json({ error: "barrelId es obligatorio." });
   }
@@ -377,10 +410,49 @@ app.post("/api/sabaody/event", (req, res) => {
   }
 
   const barrelType = game.barrels[barrelId];
-  if (!barrelType) {
-    return res.status(404).json({ error: "Barril no encontrado o ya procesado." });
+  let barrelInfo = barrelType;
+
+  if (!barrelInfo) {
+    const looksLikeFreshSession =
+      game.status === "in_progress" &&
+      game.score === 0 &&
+      game.lives === SABAODY_MAX_LIVES &&
+      Object.keys(game.barrels).length === 0 &&
+      game.retryBarrels.length === 0;
+
+    const recoveredEntry =
+      typeof barrelText === "string"
+        ? SABAODY_BARREL_POOL.find((entry) => entry.texto === barrelText)
+        : null;
+
+    if (looksLikeFreshSession && recoveredEntry) {
+      if (Number.isInteger(clientScore)) {
+        game.score = Math.max(0, clientScore);
+      }
+      if (Number.isInteger(clientLives)) {
+        game.lives = Math.max(0, Math.min(SABAODY_MAX_LIVES, clientLives));
+      }
+      if (game.lives <= 0) {
+        game.status = "failure";
+      }
+
+      barrelInfo = {
+        tipo: recoveredEntry.tipo,
+        texto: recoveredEntry.texto,
+      };
+    }
   }
-  const barrelInfo = barrelType;
+
+  if (!barrelInfo) {
+    return res.json(
+      saabodyStatePayload(game, {
+        stale: true,
+        feedback: "Evento de barril desfasado. Sigue jugando.",
+        feedbackTone: "neutral",
+      })
+    );
+  }
+
   const barrelKind = barrelInfo.tipo;
   delete game.barrels[barrelId];
 
