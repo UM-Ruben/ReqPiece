@@ -70,6 +70,8 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
   const pendingEventsRef = useRef([]);
   const crosshairRef = useRef({ x: 450, y: 260 });
   const [score, setScore] = useState(0);
+  const [hits, setHits] = useState(0);
+  const [requiredHits, setRequiredHits] = useState(Math.ceil(DEFAULT_MIN_SCORE_TO_WIN / 10));
   const [minScoreToWin, setMinScoreToWin] = useState(DEFAULT_MIN_SCORE_TO_WIN);
   const [lives, setLives] = useState(MAX_LIVES);
   const [running, setRunning] = useState(false);
@@ -133,6 +135,8 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
         const data = await parseApiResponse(response);
 
         setScore(data.score);
+        setHits(data.hits || 0);
+        setRequiredHits(data.requiredHits || Math.ceil((data.minScoreToWin || DEFAULT_MIN_SCORE_TO_WIN) / 10));
         setLives(data.lives);
 
         // Only shots (hit) should emit feedback/audio. Landing events stay silent.
@@ -167,11 +171,12 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
         eventType,
         barrelText,
         score: scoreRef.current,
+        hits,
         lives: livesRef.current,
       });
       void flushEventsQueue();
     },
-    [flushEventsQueue]
+    [flushEventsQueue, hits]
   );
 
   const spawnBarrel = useCallback(async () => {
@@ -217,6 +222,8 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
       const data = await parseApiResponse(response);
 
       setScore(data.score);
+      setHits(data.hits || 0);
+      setRequiredHits(data.requiredHits || Math.ceil((data.minScoreToWin || DEFAULT_MIN_SCORE_TO_WIN) / 10));
       setLives(data.lives);
       setMinScoreToWin(data.minScoreToWin || DEFAULT_MIN_SCORE_TO_WIN);
       setOutcome(null);
@@ -438,11 +445,11 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
 
   const finalMessage = useMemo(() => {
     if (outcome === "failure" && lives <= 0) return "La tripulacion perdio el control de la cubierta.";
-    if (outcome === "failure") return "No se alcanzó el puntaje objetivo para asegurar la cubierta.";
-    if (score >= 90) return "Dominaste el arte de distinguir el QUE del COMO.";
-    if (score >= minScoreToWin) return "Buena navegación, pero aún puedes afinar tu puntería analítica.";
+    if (outcome === "failure") return `No se alcanzó el objetivo de ${requiredHits} aciertos para asegurar la cubierta.`;
+    if (hits >= requiredHits) return "Dominaste el arte de distinguir el QUE del COMO.";
+    if (hits >= Math.max(1, requiredHits - 3)) return "Buena navegación, pero aún puedes afinar tu puntería analítica.";
     return "Necesitas reforzar la diferencia entre requisito y solución.";
-  }, [lives, minScoreToWin, outcome, score]);
+  }, [hits, lives, outcome, requiredHits]);
 
   return (
     <motion.section
@@ -473,8 +480,8 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-black uppercase tracking-[0.08em]">
-        <span className="rounded-lg bg-blue-950 px-3 py-2 text-amber-100">Puntaje: {score}</span>
-        <span className="rounded-lg bg-blue-950 px-3 py-2 text-amber-100">Meta: {minScoreToWin} pts</span>
+        <span className="rounded-lg bg-blue-950 px-3 py-2 text-amber-100">Aciertos: {hits}</span>
+        <span className="rounded-lg bg-blue-950 px-3 py-2 text-amber-100">Meta: {requiredHits} aciertos</span>
         <span className="rounded-lg bg-blue-950 px-3 py-2 text-amber-100">Vidas: {lives}</span>
         {feedback.text && (
           <span className="rounded-lg px-3 py-2" style={{ backgroundColor: feedback.color, color: "#fff" }}>

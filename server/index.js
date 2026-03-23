@@ -341,8 +341,11 @@ function randomSabaodyEntry() {
 }
 
 function initSabaodyGame(sessionObj) {
+  const requiredHits = Math.ceil(SABAODY_MIN_SCORE_TO_WIN / 10);
   sessionObj.sabaody = {
     score: 0,
+    hits: 0,
+    requiredHits,
     lives: SABAODY_MAX_LIVES,
     status: "in_progress",
     barrels: {},
@@ -359,6 +362,8 @@ function saabodyStatePayload(game, extra = {}) {
   return {
     status: game.status,
     score: game.score,
+    hits: game.hits || 0,
+    requiredHits: game.requiredHits || Math.ceil(SABAODY_MIN_SCORE_TO_WIN / 10),
     lives: game.lives,
     gameTimeSeconds: SABAODY_GAME_TIME_SECONDS,
     minScoreToWin: SABAODY_MIN_SCORE_TO_WIN,
@@ -420,6 +425,7 @@ app.post("/api/sabaody/event", (req, res) => {
     eventType,
     barrelText,
     score: clientScore,
+    hits: clientHits,
     lives: clientLives,
   } = req.body || {};
   if (!barrelId || typeof barrelId !== "string") {
@@ -432,35 +438,32 @@ app.post("/api/sabaody/event", (req, res) => {
   const barrelType = game.barrels[barrelId];
   let barrelInfo = barrelType;
 
-  if (!barrelInfo) {
-    const looksLikeFreshSession =
-      game.status === "in_progress" &&
-      game.score === 0 &&
-      game.lives === SABAODY_MAX_LIVES &&
-      Object.keys(game.barrels).length === 0 &&
-      game.retryBarrels.length === 0;
+  const recoveredEntry =
+    typeof barrelText === "string"
+      ? SABAODY_BARREL_POOL.find((entry) => entry.texto === barrelText)
+      : null;
 
-    const recoveredEntry =
-      typeof barrelText === "string"
-        ? SABAODY_BARREL_POOL.find((entry) => entry.texto === barrelText)
-        : null;
-
-    if (looksLikeFreshSession && recoveredEntry) {
-      if (Number.isInteger(clientScore)) {
-        game.score = Math.max(0, clientScore);
-      }
-      if (Number.isInteger(clientLives)) {
-        game.lives = Math.max(0, Math.min(SABAODY_MAX_LIVES, clientLives));
-      }
-      if (game.lives <= 0) {
-        game.status = "failure";
-      }
-
-      barrelInfo = {
-        tipo: recoveredEntry.tipo,
-        texto: recoveredEntry.texto,
-      };
+  // In serverless environments (Vercel), barrelId can desync between invocations.
+  // Fall back to text-based lookup so hit counting remains consistent.
+  if (!barrelInfo && recoveredEntry) {
+    if (Number.isInteger(clientScore)) {
+      game.score = Math.max(0, clientScore);
+      game.hits = Math.max(0, Math.floor(game.score / 10));
+    } else if (Number.isInteger(clientHits)) {
+      game.hits = Math.max(0, clientHits);
+      game.score = game.hits * 10;
     }
+    if (Number.isInteger(clientLives)) {
+      game.lives = Math.max(0, Math.min(SABAODY_MAX_LIVES, clientLives));
+    }
+    if (game.lives <= 0) {
+      game.status = "failure";
+    }
+
+    barrelInfo = {
+      tipo: recoveredEntry.tipo,
+      texto: recoveredEntry.texto,
+    };
   }
 
   if (!barrelInfo) {
@@ -481,11 +484,13 @@ app.post("/api/sabaody/event", (req, res) => {
 
   if (eventType === "hit") {
     if (barrelKind === "solucion") {
-      game.score += 10;
+      game.hits += 1;
+      game.score = game.hits * 10;
       feedback = "¡Buen ojo! Solución destruida";
       feedbackTone = "success";
     } else {
-      game.score -= 5;
+      game.score = Math.max(0, game.score - 5);
+      game.hits = Math.max(0, Math.floor(game.score / 10));
       game.lives -= 1;
       feedback = "¡Destruiste un requisito!";
       feedbackTone = "error";
@@ -503,7 +508,7 @@ app.post("/api/sabaody/event", (req, res) => {
   if (game.lives <= 0) {
     game.lives = 0;
     game.status = "failure";
-  } else if (game.score >= SABAODY_MIN_SCORE_TO_WIN) {
+  } else if (game.hits >= (game.requiredHits || Math.ceil(SABAODY_MIN_SCORE_TO_WIN / 10))) {
     game.status = "victory";
   }
 
@@ -519,7 +524,7 @@ app.post("/api/sabaody/finalize", (req, res) => {
   const game = getOrCreateSabaodyGame(req);
 
   if (game.status === "in_progress") {
-    game.status = game.score >= SABAODY_MIN_SCORE_TO_WIN ? "victory" : "failure";
+    game.status = game.hits >= (game.requiredHits || Math.ceil(SABAODY_MIN_SCORE_TO_WIN / 10)) ? "victory" : "failure";
   }
 
   res.json(saabodyStatePayload(game));
