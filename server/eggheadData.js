@@ -12,9 +12,9 @@ export const EGGHEAD_REQUIREMENTS = [
   {
     id: "req-02",
     code: "REQ-02",
-    name: "Gestion de catalogo",
+    name: "Gestión de catálogo",
     status: "estable",
-    brief: "El catalogo debe poder consultarse y mantenerse desde la capa funcional del sistema.",
+    brief: "El catálogo debe poder consultarse y mantenerse desde la capa funcional del sistema.",
     affectedArtifacts: ["art-4", "art-5"],
   },
   {
@@ -28,9 +28,9 @@ export const EGGHEAD_REQUIREMENTS = [
   {
     id: "req-04",
     code: "REQ-04",
-    name: "Anadir pasarela de pago",
+    name: "Añadir pasarela de pago",
     status: "modificado",
-    brief: "Se incorpora pago externo, por lo que hay que localizar que partes del sistema cambian realmente.",
+    brief: "Se incorpora pago externo, por lo que hay que localizar qué partes del sistema cambian realmente.",
     affectedArtifacts: ["art-1", "art-3", "art-5"],
   },
 ];
@@ -43,22 +43,22 @@ export const EGGHEAD_ARTIFACTS = [
   },
   {
     id: "art-2",
-    name: "Test de Integracion Auth",
-    description: "Valida autenticacion, sesiones y permisos de acceso.",
+    name: "Test de Integración Auth",
+    description: "Valida autenticación, sesiones y permisos de acceso.",
   },
   {
     id: "art-3",
     name: "Tabla DB: Transacciones",
-    description: "Persiste cobros, estados de pago y evidencias de operacion.",
+    description: "Persiste cobros, estados de pago y evidencias de operación.",
   },
   {
     id: "art-4",
-    name: "Modulo de Perfil de Usuario",
+    name: "Módulo de Perfil de Usuario",
     description: "Centraliza datos de cuenta, preferencias y datos visibles del usuario.",
   },
   {
     id: "art-5",
     name: "API: Checkout & Gateway",
-    description: "Orquesta checkout, comunicacion con servicios externos y confirmacion final.",
+    description: "Orquesta checkout, comunicación con servicios externos y confirmación final.",
   },
 ];

@@ -324,7 +324,7 @@ app.post("/api/sabaody/start", (req, res) => {
   const game = req.session.sabaody;
   res.json(
     saabodyStatePayload(game, {
-      feedback: "Comienza la ronda: dispara solo a barriles de solucion.",
+      feedback: "Comienza la ronda: dispara solo a barriles de solución.",
       feedbackTone: "neutral",
     })
   );
@@ -390,7 +390,7 @@ app.post("/api/sabaody/event", (req, res) => {
   if (eventType === "hit") {
     if (barrelKind === "solucion") {
       game.score += 10;
-      feedback = "¡Buen ojo! Solucion destruida";
+      feedback = "¡Buen ojo! Solución destruida";
       feedbackTone = "success";
     } else {
       game.score -= 5;
@@ -511,8 +511,8 @@ app.post("/api/wholecake/swipe", (req, res) => {
   }
 
   const { side } = req.body || {};
-  if (side !== "left" && side !== "right") {
-    return res.status(400).json({ error: "side debe ser 'left' o 'right'." });
+  if (side !== "left" && side !== "right" && side !== "up") {
+    return res.status(400).json({ error: "side debe ser 'left', 'right' o 'up'." });
   }
 
   const currentCard = game.deck[game.cardIndex];
@@ -521,7 +521,9 @@ app.post("/api/wholecake/swipe", (req, res) => {
     return res.json(buildWholeCakePayload(game));
   }
 
-  const guessedType = side === "left" ? "funcional" : "no-funcional";
+  let guessedType = "no-funcional";
+  if (side === "left") guessedType = "funcional";
+  if (side === "up") guessedType = "sostenibilidad";
   const isCorrect = guessedType === currentCard.tipo;
 
   let feedback = "";
@@ -584,7 +586,7 @@ function initWanoGame(sessionObj) {
     lives: WANO_MAX_LIVES,
     score: 0,
     status: "in_progress",
-    feedback: "Activa el Haki de Observacion y revisa el pergamino.",
+    feedback: "Activa el Haki de Observación y revisa el pergamino.",
   };
 }
 
@@ -599,6 +601,7 @@ function buildWanoPayload(game, extra = {}) {
   const requirements = WANO_REQUIREMENTS.map((req) => ({
     id: req.id,
     text: req.text,
+    targetWord: req.targetWord,
   }));
 
   const resolvedDetails = {};
