@@ -388,8 +388,8 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
           animate={{ opacity: 1 }}
           className="absolute inset-0 z-30 flex items-center justify-center rounded-3xl bg-rose-950/65 p-4"
         >
-          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border-4 border-rose-300 bg-pink-50 text-center shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
-            <img src={imageFail} alt="Derrota en Whole Cake" className="w-full max-h-[60vh] object-contain bg-rose-100" />
+          <div className="mx-auto w-fit max-w-full overflow-hidden rounded-2xl border-4 border-rose-300 bg-pink-50 text-center shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
+            <img src={imageFail} alt="Derrota en Whole Cake" className="block h-auto max-h-[70vh] w-auto max-w-full object-contain bg-rose-100" />
             <div className="p-6">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-rose-700">Big Mom</p>
               <h3 className="mt-2 text-3xl font-black uppercase text-rose-900">Rabieta de hambre</h3>
@@ -416,8 +416,8 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
           animate={{ opacity: 1 }}
           className="absolute inset-0 z-30 flex items-center justify-center rounded-3xl bg-sky-950/55 p-4"
         >
-          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border-4 border-sky-300 bg-sky-50 text-center shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
-            <img src={imageSuccess} alt="Victoria en Whole Cake" className="w-full max-h-[60vh] object-contain bg-sky-100" />
+          <div className="mx-auto w-fit max-w-full overflow-hidden rounded-2xl border-4 border-sky-300 bg-sky-50 text-center shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
+            <img src={imageSuccess} alt="Victoria en Whole Cake" className="block h-auto max-h-[70vh] w-auto max-w-full object-contain bg-sky-100" />
             <div className="p-6">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-700">Whole Cake</p>
               <h3 className="mt-2 text-3xl font-black uppercase text-sky-900">Pastel perfecto</h3>
