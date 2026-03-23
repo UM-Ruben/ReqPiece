@@ -551,9 +551,9 @@ function syncWholeCakeTimer(game) {
 }
 
 function initWholeCakeGame(sessionObj) {
-  const shuffledDeck = shuffle(WHOLECAKE_REQUIREMENTS_POOL.map((c) => ({ ...c })));
+  const orderedDeck = WHOLECAKE_REQUIREMENTS_POOL.map((c) => ({ ...c }));
   sessionObj.wholecake = {
-    deck: shuffledDeck,
+    deck: orderedDeck,
     cardIndex: 0,
     score: 0,
     timeLeft: WHOLECAKE_GAME_TIME_SECONDS,
@@ -716,6 +716,19 @@ function createWanoResolvedMap() {
   }, {});
 }
 
+function sanitizeWanoResolvedMap(candidateMap) {
+  const safeMap = createWanoResolvedMap();
+  if (!candidateMap || typeof candidateMap !== "object" || Array.isArray(candidateMap)) {
+    return safeMap;
+  }
+
+  Object.keys(safeMap).forEach((reqId) => {
+    safeMap[reqId] = candidateMap[reqId] === true;
+  });
+
+  return safeMap;
+}
+
 function initWanoGame(sessionObj) {
   sessionObj.wano = {
     resolvedMap: createWanoResolvedMap(),
@@ -783,12 +796,49 @@ app.post("/api/wano/cut", (req, res) => {
     });
   }
 
-  const { requirementId, token } = req.body || {};
+  const {
+    requirementId,
+    token,
+    lives: clientLives,
+    score: clientScore,
+    resolvedMap: clientResolvedMap,
+  } = req.body || {};
   if (!requirementId || typeof requirementId !== "string") {
     return res.status(400).json({ error: "requirementId es obligatorio." });
   }
   if (!token || typeof token !== "string") {
     return res.status(400).json({ error: "token es obligatorio." });
+  }
+
+  const solvedCountBefore = Object.values(game.resolvedMap || {}).filter(Boolean).length;
+  const looksLikeFreshSession =
+    game.status === "in_progress" &&
+    game.lives === WANO_MAX_LIVES &&
+    game.score === 0 &&
+    solvedCountBefore === 0;
+
+  if (looksLikeFreshSession) {
+    const recoveredMap = sanitizeWanoResolvedMap(clientResolvedMap);
+    const recoveredSolvedCount = Object.values(recoveredMap).filter(Boolean).length;
+
+    if (recoveredSolvedCount > 0) {
+      game.resolvedMap = recoveredMap;
+      game.score = recoveredSolvedCount * 20;
+    } else if (Number.isInteger(clientScore) && clientScore > 0) {
+      game.score = Math.max(0, clientScore);
+    }
+
+    if (Number.isInteger(clientLives)) {
+      game.lives = Math.max(0, Math.min(WANO_MAX_LIVES, clientLives));
+    }
+
+    if (game.lives <= 0) {
+      game.status = "failure";
+    }
+  }
+
+  if (game.status !== "in_progress") {
+    return res.json(buildWanoPayload(game));
   }
 
   const requirement = WANO_REQUIREMENTS.find((item) => item.id === requirementId);
@@ -859,6 +909,53 @@ function createEggHeadEmptyLinks() {
   }, {});
 }
 
+function sanitizeEggHeadLinks(candidateLinksByReq) {
+  const safeLinks = createEggHeadEmptyLinks();
+  if (!candidateLinksByReq || typeof candidateLinksByReq !== "object" || Array.isArray(candidateLinksByReq)) {
+    return safeLinks;
+  }
+
+  EGGHEAD_REQUIREMENTS.forEach((req) => {
+    const rawLinks = candidateLinksByReq[req.id];
+    if (!Array.isArray(rawLinks)) return;
+
+    const unique = [...new Set(rawLinks.filter((value) => typeof value === "string"))];
+    safeLinks[req.id] = unique.filter((artifactId) => req.affectedArtifacts.includes(artifactId));
+  });
+
+  return safeLinks;
+}
+
+function restoreEggHeadFreshSession(game, payload) {
+  const linkedCount = Object.values(game.linksByReq || {}).reduce((acc, links) => acc + links.length, 0);
+  const looksLikeFreshSession =
+    game.status === "in_progress" &&
+    game.selectedReqId === null &&
+    game.errors === 0 &&
+    linkedCount === 0;
+
+  if (!looksLikeFreshSession) return;
+
+  const recoveredLinks = sanitizeEggHeadLinks(payload?.linksByReq);
+  const recoveredLinkedCount = Object.values(recoveredLinks).reduce((acc, links) => acc + links.length, 0);
+  game.linksByReq = recoveredLinks;
+
+  if (typeof payload?.selectedReqId === "string") {
+    const selectedExists = EGGHEAD_REQUIREMENTS.some((req) => req.id === payload.selectedReqId);
+    game.selectedReqId = selectedExists ? payload.selectedReqId : null;
+  }
+
+  if (Number.isInteger(payload?.errors)) {
+    game.errors = Math.max(0, Math.min(EGGHEAD_MAX_ERRORS, payload.errors));
+  }
+
+  if (recoveredLinkedCount >= EGGHEAD_TOTAL_REQUIRED_LINKS) {
+    game.status = "victory";
+  } else if (game.errors >= EGGHEAD_MAX_ERRORS) {
+    game.status = "failure";
+  }
+}
+
 function toPublicEggHeadRequirement(req) {
   return {
     id: req.id,
@@ -927,6 +1024,7 @@ app.post("/api/egghead/start", (req, res) => {
 
 app.post("/api/egghead/select", (req, res) => {
   const game = getOrCreateEggHeadGame(req);
+  restoreEggHeadFreshSession(game, req.body);
 
   if (game.status !== "in_progress") {
     return res.status(409).json({
@@ -950,6 +1048,7 @@ app.post("/api/egghead/select", (req, res) => {
 
 app.post("/api/egghead/artifact", (req, res) => {
   const game = getOrCreateEggHeadGame(req);
+  restoreEggHeadFreshSession(game, req.body);
 
   if (game.status !== "in_progress") {
     return res.status(409).json({
