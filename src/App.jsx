@@ -525,11 +525,11 @@ export default function App() {
               Tu tripulación ya canta tu nombre como el nuevo Rey de los Analistas.
             </p>
 
-            <div className="mt-6 mx-auto w-fit max-w-full overflow-hidden rounded-2xl border-4 border-amber-700/60 bg-amber-50/60 p-1">
+            <div className="mt-6 mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border-4 border-amber-500/80 bg-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
               <img
                 src={finalImage}
                 alt="Imagen final de victoria"
-                className="block h-auto max-h-[70vh] w-auto max-w-full object-contain"
+                className="block w-full max-h-[60vh] object-contain"
               />
             </div>
 
