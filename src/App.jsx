@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Anchor, Compass, Lock, Skull, Unlock } from "lucide-react";
+import { Anchor, Compass, Lock, Skull, Unlock, Volume2, VolumeX } from "lucide-react";
 import IslandIntro from "./components/IslandIntro";
 import finalImage from "./image/final.webp";
 import { usePirateAudio } from "./hooks/usePirateAudio";
@@ -94,7 +94,40 @@ export default function App() {
     getScreenFromPath(window.location.pathname, loadUnlockedIslands())
   );
   const [showingIntro, setShowingIntro] = useState(false);
-  const { playClick, playError, playSuccess } = usePirateAudio();
+  const {
+    playClick,
+    playError,
+    playSuccess,
+    masterVolume,
+    setMasterVolume,
+    isMuted,
+    setIsMuted,
+    increaseVolume,
+    decreaseVolume,
+    toggleMute,
+  } = usePirateAudio();
+
+  const handleVolumeInput = (value) => {
+    const nextVolume = Number(value) / 100;
+    setMasterVolume(nextVolume);
+    if (isMuted && nextVolume > 0) {
+      setIsMuted(false);
+    }
+  };
+
+  const handleVolumeDown = () => {
+    decreaseVolume();
+    if (isMuted) {
+      setIsMuted(false);
+    }
+  };
+
+  const handleVolumeUp = () => {
+    increaseVolume();
+    if (isMuted) {
+      setIsMuted(false);
+    }
+  };
 
   const goToIsland = (islandKey) => {
     playClick();
@@ -291,6 +324,66 @@ export default function App() {
             <p className="mt-3 w-full text-sm font-semibold text-blue-900/80 md:text-base text-center">
               El Rey de los Analistas, Gold Roger, antes de retirarse dejó el mayor tesoro de la Ingeniería de Software escondido en la última isla del Grand Line: el "One Spec" (el Documento de Especificación de Requisitos perfecto).<br/>Tú eres un joven capitán pirata que aspira a ser el Rey de los Analistas. Para lograrlo, debes construir el barco definitivo (el sistema de software) y reclutar a una tripulación. Deberás navegar por 6 islas diferentes. En cada isla te enfrentarás a un minijuego que pondrá a prueba tus conocimientos teóricos de GPDS (Ingeniería de Requisitos).
             </p>
+
+            <div className="mt-6 rounded-2xl border-2 border-amber-900/25 bg-yellow-200/70 p-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-900">Panel de sonido</p>
+                  <p className="mt-1 text-sm font-semibold text-blue-900/80">
+                    Ajusta el volumen general del juego o silencia todo el audio.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    toggleMute();
+                  }}
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] ${
+                    isMuted
+                      ? "border-red-500 bg-red-500 text-white"
+                      : "border-emerald-600 bg-emerald-500 text-white"
+                  }`}
+                >
+                  {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                  {isMuted ? "Audio silenciado" : "Audio activo"}
+                </button>
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-[auto_1fr_auto_auto] md:items-center">
+                <button
+                  type="button"
+                  onClick={handleVolumeDown}
+                  className="rounded-lg border border-blue-800/30 bg-blue-100 px-3 py-2 text-sm font-black text-blue-900"
+                  aria-label="Bajar volumen"
+                >
+                  -
+                </button>
+
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={Math.round(masterVolume * 100)}
+                  onChange={(event) => handleVolumeInput(event.target.value)}
+                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-blue-900/20"
+                  aria-label="Volumen general"
+                />
+
+                <button
+                  type="button"
+                  onClick={handleVolumeUp}
+                  className="rounded-lg border border-blue-800/30 bg-blue-100 px-3 py-2 text-sm font-black text-blue-900"
+                  aria-label="Subir volumen"
+                >
+                  +
+                </button>
+
+                <span className="min-w-14 text-right text-sm font-black text-blue-900">
+                  {isMuted ? "0%" : `${Math.round(masterVolume * 100)}%`}
+                </span>
+              </div>
+            </div>
 
             <div className="mt-8 grid gap-4 md:grid-cols-2">
               {islandsMenu.map((island, index) => {
