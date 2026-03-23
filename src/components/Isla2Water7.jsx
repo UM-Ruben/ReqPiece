@@ -288,8 +288,8 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playClick
           animate={{ opacity: 1 }}
           className="absolute inset-0 z-30 flex items-center justify-center bg-blue-950/75 p-4"
         >
-          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border-4 border-red-400/90 bg-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
-            <img src={imageFail} alt="Derrota en Water 7" className="w-full max-h-[60vh] object-contain" />
+          <div className="mx-auto w-fit max-w-full overflow-hidden rounded-2xl border-4 border-red-400/90 bg-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
+            <img src={imageFail} alt="Derrota en Water 7" className="block h-auto max-h-[70vh] w-auto max-w-full object-contain" />
             <div className="space-y-4 p-5">
               <h3 className="text-2xl font-black uppercase tracking-wide text-red-300">Derrota en Water 7</h3>
               <p className="font-semibold text-amber-100/90">
@@ -314,8 +314,8 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playClick
           animate={{ opacity: 1 }}
           className="absolute inset-0 z-30 flex items-center justify-center bg-blue-950/75 p-4"
         >
-          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border-4 border-emerald-400/90 bg-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
-            <img src={imageSuccess} alt="Victoria en Water 7" className="w-full max-h-[60vh] object-contain" />
+          <div className="mx-auto w-fit max-w-full overflow-hidden rounded-2xl border-4 border-emerald-400/90 bg-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
+            <img src={imageSuccess} alt="Victoria en Water 7" className="block h-auto max-h-[70vh] w-auto max-w-full object-contain" />
             <div className="space-y-3 p-5">
               <h3 className="text-2xl font-black uppercase tracking-wide text-emerald-300">¡Isla 2 completada!</h3>
               <p className="font-semibold text-amber-100/90">
