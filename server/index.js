@@ -504,6 +504,8 @@ app.post("/api/sabaody/event", (req, res) => {
   if (game.lives <= 0) {
     game.lives = 0;
     game.status = "failure";
+  } else if (game.score >= SABAODY_MIN_SCORE_TO_WIN) {
+    game.status = "victory";
   }
 
   return res.json(

@@ -5,9 +5,8 @@ import imageFail from "../image/isla3Fallo.webp";
 import imageSuccess from "../image/isla3Acierto.webp";
 import { apiFetch } from "../lib/api";
 
-const DEFAULT_GAME_TIME_SECONDS = 45;
 const MAX_LIVES = 3;
-const DEFAULT_MIN_SCORE_TO_WIN = 30;
+const DEFAULT_MIN_SCORE_TO_WIN = 180;
 
 function wrapTextLines(ctx, text, maxWidth) {
   const words = text.split(" ");
@@ -67,8 +66,6 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
   const pendingEventsRef = useRef([]);
   const crosshairRef = useRef({ x: 450, y: 260 });
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(DEFAULT_GAME_TIME_SECONDS);
-  const [gameTimeSeconds, setGameTimeSeconds] = useState(DEFAULT_GAME_TIME_SECONDS);
   const [minScoreToWin, setMinScoreToWin] = useState(DEFAULT_MIN_SCORE_TO_WIN);
   const [lives, setLives] = useState(MAX_LIVES);
   const [running, setRunning] = useState(false);
@@ -145,7 +142,9 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
           }
         }
 
-        if (data.status === "failure") {
+        if (data.status === "victory") {
+          finishGame("success");
+        } else if (data.status === "failure") {
           finishGame("failure");
         }
       } catch (error) {
@@ -204,21 +203,6 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
     }
   }, [outcome, running]);
 
-  const finalizeRound = useCallback(async () => {
-    try {
-      const response = await apiFetch("/api/sabaody/finalize", {
-        method: "POST",
-      });
-      const data = await parseApiResponse(response);
-      setScore(data.score);
-      setLives(data.lives);
-      finishGame(data.status === "victory" ? "success" : "failure");
-    } catch (error) {
-      setRequestError(error.message);
-      finishGame(scoreRef.current >= minScoreRef.current ? "success" : "failure");
-    }
-  }, [finishGame]);
-
   const startGame = useCallback(async () => {
     setIsLoading(true);
     setRequestError("");
@@ -231,8 +215,6 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
       setScore(data.score);
       setLives(data.lives);
       setMinScoreToWin(data.minScoreToWin || DEFAULT_MIN_SCORE_TO_WIN);
-      setGameTimeSeconds(data.gameTimeSeconds || DEFAULT_GAME_TIME_SECONDS);
-      setTimeLeft(data.gameTimeSeconds || DEFAULT_GAME_TIME_SECONDS);
       setOutcome(null);
       setFeedback({ text: "", color: "#16a34a" });
       setRunning(true);
@@ -253,22 +235,6 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
   useEffect(() => {
     void startGame();
   }, [startGame]);
-
-  useEffect(() => {
-    if (!running || outcome) return;
-    const timer = window.setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          window.clearInterval(timer);
-          void finalizeRound();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [finalizeRound, outcome, running]);
 
   useEffect(() => {
     return () => {
@@ -428,9 +394,9 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
 
   const finalMessage = useMemo(() => {
     if (outcome === "failure" && lives <= 0) return "La tripulacion perdio el control de la cubierta.";
-    if (outcome === "failure") return "El tiempo acabo y la cubierta no quedo asegurada.";
+    if (outcome === "failure") return "No se alcanzó el puntaje objetivo para asegurar la cubierta.";
     if (score >= 90) return "Dominaste el arte de distinguir el QUE del COMO.";
-    if (score >= minScoreToWin) return "Buena navegacion, pero aun puedes afinar tu punteria analitica.";
+    if (score >= minScoreToWin) return "Buena navegación, pero aún puedes afinar tu puntería analítica.";
     return "Necesitas reforzar la diferencia entre requisito y solución.";
   }, [lives, minScoreToWin, outcome, score]);
 
@@ -464,7 +430,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
 
       <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-black uppercase tracking-[0.08em]">
         <span className="rounded-lg bg-blue-950 px-3 py-2 text-amber-100">Puntaje: {score}</span>
-        <span className="rounded-lg bg-blue-950 px-3 py-2 text-amber-100">Tiempo: {timeLeft}s</span>
+        <span className="rounded-lg bg-blue-950 px-3 py-2 text-amber-100">Meta: {minScoreToWin} pts</span>
         <span className="rounded-lg bg-blue-950 px-3 py-2 text-amber-100">Vidas: {lives}</span>
         {feedback.text && (
           <span className="rounded-lg px-3 py-2" style={{ backgroundColor: feedback.color, color: "#fff" }}>

@@ -1,6 +1,6 @@
 export const SABAODY_GAME_TIME_SECONDS = 45;
 export const SABAODY_MAX_LIVES = 3;
-export const SABAODY_MIN_SCORE_TO_WIN = 30;
+export const SABAODY_MIN_SCORE_TO_WIN = 180;
 
 export const SABAODY_BARREL_POOL = [
   { texto: "Restringir el acceso a personal no autorizado", tipo: "problema" },
