@@ -55,6 +55,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
   const animationRef = useRef(0);
   const spawnTimerRef = useRef(0);
   const feedbackTimeoutRef = useRef(null);
+  const shotAudioRef = useRef(null);
   const barrelsRef = useRef([]);
   const lastFrameTimeRef = useRef(0);
   const scoreRef = useRef(0);
@@ -238,9 +239,24 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
 
   useEffect(() => {
     return () => {
+      if (shotAudioRef.current) {
+        shotAudioRef.current.pause();
+        shotAudioRef.current = null;
+      }
       if (feedbackTimeoutRef.current) {
         window.clearTimeout(feedbackTimeoutRef.current);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    const shotAudio = new Audio("/audio/disparo.mp3");
+    shotAudio.preload = "auto";
+    shotAudioRef.current = shotAudio;
+
+    return () => {
+      shotAudio.pause();
+      shotAudioRef.current = null;
     };
   }, []);
 
@@ -374,6 +390,14 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
 
   const fireShot = useCallback(() => {
     if (!running || outcome) return;
+
+    if (shotAudioRef.current) {
+      shotAudioRef.current.currentTime = 0;
+      shotAudioRef.current.play().catch(() => {
+
+      });
+    }
+
     const { x, y } = crosshairRef.current;
 
     const hitIndex = barrelsRef.current.findIndex(
