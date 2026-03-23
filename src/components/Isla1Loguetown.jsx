@@ -78,7 +78,7 @@ export default function Isla1Loguetown({
       const response = await apiFetch("/api/loguetown/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order: cards.map((p) => p.id) }),
+        body: JSON.stringify({ order: cards.map((p) => p.id), lives }),
       });
       const data = await parseLoguetownResponse(response);
       setLives(data.lives);

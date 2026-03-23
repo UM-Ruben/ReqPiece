@@ -267,7 +267,27 @@ function handleLoguetownCheck(req, res) {
     return res.status(409).json({ error: "La partida ya terminó. Inicia una nueva para continuar." });
   }
 
-  const { order } = req.body || {};
+  const { order, lives: clientLives } = req.body || {};
+
+  const looksLikeFreshSession =
+    game.status === "in_progress" && game.lives === LOGUETOWN_MAX_LIVES;
+
+  if (looksLikeFreshSession && Number.isInteger(clientLives)) {
+    game.lives = Math.max(0, Math.min(LOGUETOWN_MAX_LIVES, clientLives));
+    if (game.lives <= 0) {
+      game.status = "failure";
+    }
+  }
+
+  if (game.status !== "in_progress") {
+    return res.json({
+      correct: false,
+      status: game.status,
+      lives: game.lives,
+      feedback: "La partida ya terminó. Inicia una nueva para continuar.",
+    });
+  }
+
   const validIds = new Set(LOGUETOWN_CORRECT_ORDER);
 
   if (
