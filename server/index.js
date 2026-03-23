@@ -638,19 +638,30 @@ app.post("/api/wholecake/swipe", (req, res) => {
       game.timeLeft >= WHOLECAKE_GAME_TIME_SECONDS - 1;
 
     if (looksLikeFreshSession) {
-      const recoveredIndex = game.deck.findIndex((card) => card.id === cardId);
-      if (recoveredIndex >= 0) {
-        game.cardIndex = recoveredIndex;
+      const totalCards = game.totalCards || game.deck.length;
+      const requestedCardIndex = game.deck.findIndex((card) => card.id === cardId);
 
-        const recoveredCorrectFromScore = Number.isInteger(clientScore)
-          ? Math.max(0, Math.min(recoveredIndex, Math.floor(clientScore / 10)))
-          : recoveredIndex;
+      const recoveredFromCounter = Number.isInteger(clientCorrectCount)
+        ? clientCorrectCount
+        : Number.isInteger(clientCardNumber)
+          ? clientCardNumber - 1
+          : Number.isInteger(clientScore)
+            ? Math.floor(clientScore / 10)
+            : 0;
 
-        const recoveredCorrect = Number.isInteger(clientCorrectCount)
-          ? Math.max(0, Math.min(recoveredIndex, clientCorrectCount))
-          : recoveredCorrectFromScore;
+      const expectedIndex = Math.max(0, Math.min(totalCards - 1, recoveredFromCounter));
 
-        game.correctCount = recoveredCorrect;
+      if (requestedCardIndex >= 0) {
+        // In serverless resets, the shuffled order can differ.
+        // Move the requested card to the index indicated by the traditional counter.
+        if (requestedCardIndex !== expectedIndex) {
+          const expectedCard = game.deck[expectedIndex];
+          game.deck[expectedIndex] = game.deck[requestedCardIndex];
+          game.deck[requestedCardIndex] = expectedCard;
+        }
+
+        game.cardIndex = expectedIndex;
+        game.correctCount = expectedIndex;
         game.score = game.correctCount * 10;
 
         if (Number.isInteger(clientTimeLeft)) {
@@ -690,7 +701,7 @@ app.post("/api/wholecake/swipe", (req, res) => {
 
   if (isCorrect) {
     game.correctCount += 1;
-    game.score += 10;
+    game.score = game.correctCount * 10;
     game.timeLeft = Math.min(WHOLECAKE_MAX_TIME_SECONDS, game.timeLeft + WHOLECAKE_TIME_GAIN_ON_HIT);
     feedback = "¡Delicioso!";
     feedbackTone = "success";
