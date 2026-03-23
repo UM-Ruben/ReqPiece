@@ -604,12 +604,54 @@ app.post("/api/wholecake/swipe", (req, res) => {
     });
   }
 
-  const { side } = req.body || {};
+  const {
+    side,
+    cardId,
+    score: clientScore,
+    timeLeft: clientTimeLeft,
+    currentCardNumber: clientCardNumber,
+  } = req.body || {};
   if (side !== "left" && side !== "right" && side !== "up") {
     return res.status(400).json({ error: "side debe ser 'left', 'right' o 'up'." });
   }
 
-  const currentCard = game.deck[game.cardIndex];
+  let currentCard = game.deck[game.cardIndex];
+
+  if (typeof cardId === "string" && currentCard && currentCard.id !== cardId) {
+    const looksLikeFreshSession =
+      game.status === "in_progress" &&
+      game.cardIndex === 0 &&
+      game.score === 0 &&
+      game.timeLeft >= WHOLECAKE_GAME_TIME_SECONDS - 1;
+
+    if (looksLikeFreshSession) {
+      const recoveredIndex = game.deck.findIndex((card) => card.id === cardId);
+      if (recoveredIndex >= 0) {
+        game.cardIndex = recoveredIndex;
+        if (Number.isInteger(clientScore)) {
+          game.score = Math.max(0, clientScore);
+        }
+        if (Number.isInteger(clientTimeLeft)) {
+          game.timeLeft = Math.max(0, Math.min(WHOLECAKE_MAX_TIME_SECONDS, clientTimeLeft));
+        }
+        game.lastTickAtMs = Date.now();
+        currentCard = game.deck[game.cardIndex] || null;
+      }
+    }
+
+    if (!currentCard || currentCard.id !== cardId) {
+      return res.json(
+        buildWholeCakePayload(
+          game,
+          Number.isInteger(clientCardNumber)
+            ? `Movimiento desfasado en tarjeta ${clientCardNumber}. Intenta de nuevo.`
+            : "Movimiento desfasado. Intenta de nuevo.",
+          "neutral"
+        )
+      );
+    }
+  }
+
   if (!currentCard) {
     game.status = "victory";
     return res.json(buildWholeCakePayload(game));

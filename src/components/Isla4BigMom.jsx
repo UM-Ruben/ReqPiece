@@ -158,7 +158,13 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
         const response = await apiFetch("/api/wholecake/swipe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ side }),
+          body: JSON.stringify({
+            side,
+            cardId: currentCard.id,
+            score,
+            timeLeft,
+            currentCardNumber,
+          }),
         });
         const data = await parseApiResponse(response);
         applyPayload(data);
