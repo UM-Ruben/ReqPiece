@@ -152,7 +152,7 @@ app.post("/api/water7/answer", (req, res) => {
     });
   }
 
-  const { optionId } = req.body || {};
+  const { optionId, questionId } = req.body || {};
   if (!optionId || typeof optionId !== "string") {
     return res.status(400).json({ error: "optionId es obligatorio." });
   }
@@ -161,6 +161,14 @@ app.post("/api/water7/answer", (req, res) => {
   if (!question) {
     game.status = "failure";
     return res.status(500).json({ error: "Estado de partida inválido." });
+  }
+
+  if (typeof questionId === "string" && questionId !== question.id) {
+    return res.json({
+      correct: false,
+      stale: true,
+      ...buildGamePayload(game, "Tu respuesta llegó tarde para otra pregunta. Inténtalo de nuevo."),
+    });
   }
 
   const isCorrect = question.correctOptionId === optionId;

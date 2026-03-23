@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Compass, Cpu, Heart, User } from "lucide-react";
 import imageFail from "../image/isla2Fallo.webp";
@@ -32,6 +32,9 @@ async function parseResponse(response) {
 }
 
 export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playClick, playError, playSuccess }) {
+  const lockRef = useRef(false);
+  const requestSeqRef = useRef(0);
+  const mountedRef = useRef(true);
   const [currentDialog, setCurrentDialog] = useState(null);
   const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
   const [totalQuestions, setTotalQuestions] = useState(0);
@@ -69,6 +72,10 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playClick
   };
 
   const startGame = async () => {
+    const requestSeq = requestSeqRef.current + 1;
+    requestSeqRef.current = requestSeq;
+    lockRef.current = true;
+
     setIsLoading(true);
     setRequestError("");
     setIsLocked(true);
@@ -82,18 +89,25 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playClick
         },
       });
       const data = await parseResponse(response);
+      if (!mountedRef.current || requestSeq !== requestSeqRef.current) return;
+
       applyServerState(data);
       setFeedback({
         type: "info",
         message: data.feedback || "Selecciona la mejor traducción.",
       });
     } catch (error) {
+      if (!mountedRef.current || requestSeq !== requestSeqRef.current) return;
+
       setRequestError(error.message);
       setFeedback({
         type: "error",
         message: "No fue posible cargar la partida de Water 7.",
       });
     } finally {
+      if (!mountedRef.current || requestSeq !== requestSeqRef.current) return;
+
+      lockRef.current = false;
       setIsLoading(false);
       setIsLocked(false);
     }
@@ -101,10 +115,20 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playClick
 
   useEffect(() => {
     startGame();
+
+    return () => {
+      mountedRef.current = false;
+      requestSeqRef.current += 1;
+      lockRef.current = false;
+    };
   }, []);
 
   const handleOption = async (optionId) => {
-    if (victory || outcome === "failure" || isLocked || isLoading || !currentDialog) return;
+    if (victory || outcome === "failure" || isLoading || !currentDialog || isLocked || lockRef.current) return;
+
+    const requestSeq = requestSeqRef.current + 1;
+    requestSeqRef.current = requestSeq;
+    lockRef.current = true;
 
     setRequestError("");
     setIsLocked(true);
@@ -115,14 +139,17 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playClick
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ optionId }),
+        body: JSON.stringify({ optionId, questionId: currentDialog.id }),
       });
 
       const data = await parseResponse(response);
+      if (!mountedRef.current || requestSeq !== requestSeqRef.current) return;
 
-      if (data.correct) {
+      if (data.correct && !data.stale) {
         playSuccess();
         setFeedback({ type: "success", message: data.feedback || "¡Correcto!" });
+      } else if (data.stale) {
+        setFeedback({ type: "info", message: data.feedback || "La pregunta cambió, vuelve a intentarlo." });
       } else {
         playError();
         setFeedback({ type: "error", message: data.feedback || "Respuesta incorrecta." });
@@ -130,12 +157,17 @@ export default function Isla2Water7({ onBackToMenu, onIslandCompleted, playClick
 
       applyServerState(data);
     } catch (error) {
+      if (!mountedRef.current || requestSeq !== requestSeqRef.current) return;
+
       setFeedback({
         type: "error",
         message: "Error al validar la respuesta con el servidor.",
       });
       setRequestError(error.message);
     } finally {
+      if (!mountedRef.current || requestSeq !== requestSeqRef.current) return;
+
+      lockRef.current = false;
       setIsLocked(false);
     }
   };
