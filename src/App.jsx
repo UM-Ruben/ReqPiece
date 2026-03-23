@@ -125,19 +125,19 @@ export default function App() {
     {
       key: "isla1",
       nombre: "Loguetown",
-      descripcion: "Ordena fases del ciclo de requisitos para iniciar la travesia.",
+      descripcion: "Ordena fases del ciclo de requisitos para iniciar la travesía.",
       lockedHint: "",
     },
     {
       key: "isla2",
       nombre: "Water 7",
-      descripcion: "Traduce dialogos cliente-programador al lenguaje tecnico.",
+      descripcion: "Traduce diálogos cliente-programador al lenguaje técnico.",
       lockedHint: "Completa Isla 1 para desbloquear.",
     },
     {
       key: "isla3",
-      nombre: "Archipielago Sabaody",
-      descripcion: "Shooter: distingue requisito (QUE) de solucion (COMO).",
+      nombre: "Archipiélago Sabaody",
+      descripcion: "Shooter: distingue requisito (QUÉ) de solución (CÓMO).",
       lockedHint: "Completa Isla 2 para desbloquear.",
     },
     {
@@ -149,13 +149,13 @@ export default function App() {
     {
       key: "isla5",
       nombre: "Wano",
-      descripcion: "Valida requisitos con precision IEEE 830 en Onigashima.",
+      descripcion: "Valida requisitos con precisión IEEE 830 en Onigashima.",
       lockedHint: "Completa Isla 4 para desbloquear.",
     },
     {
       key: "isla6",
       nombre: "EggHead",
-      descripcion: "Laboratorio del futuro: trazabilidad cuantica e impacto automatizado.",
+      descripcion: "Laboratorio del futuro: trazabilidad cuántica e impacto automatizado.",
       lockedHint: "Completa Isla 5 para desbloquear.",
     },
   ];
@@ -228,7 +228,7 @@ export default function App() {
       setCurrentScreen("menu");
 
       // eslint-disable-next-line no-console
-      console.info(`Isla ${parsed} resuelta. Progreso actualizado y menu abierto.`);
+      console.info(`Isla ${parsed} resuelta. Progreso actualizado y menú abierto.`);
       return true;
     };
 
@@ -267,7 +267,7 @@ export default function App() {
             </div>
             <div className="inline-flex items-center gap-2 rounded-xl border border-amber-300/40 bg-amber-100/10 px-3 py-2 text-sm font-bold text-amber-100">
               <Anchor className="h-4 w-4" />
-              Ingenieria de Requisitos
+              Ingeniería de Requisitos
             </div>
           </div>
         </header>
@@ -520,9 +520,9 @@ export default function App() {
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-900">ENHORABUENA</p>
             <h2 className="mt-2 text-4xl font-black uppercase">¡Has encontrado el One Spec!</h2>
             <p className="mt-4 text-base font-semibold text-blue-900/85">
-              Superaste las 6 islas del Grand Line y dominaste la Ingenieria de Requisitos.
-              Encontraste el One Spec y cerraste la travesia como un verdadero Rey de los Analistas.
-              Tu tripulacion ya canta tu nombre como el nuevo Rey de los Analistas.
+              Superaste las 6 islas del Grand Line y dominaste la Ingeniería de Requisitos.
+              Encontraste el One Spec y cerraste la travesía como un verdadero Rey de los Analistas.
+              Tu tripulación ya canta tu nombre como el nuevo Rey de los Analistas.
             </p>
 
             <div className="mt-6 overflow-hidden rounded-2xl border-4 border-amber-700/60 bg-amber-50/60">
@@ -542,7 +542,7 @@ export default function App() {
                 }}
                 className="rounded-xl border-2 border-amber-400 bg-gradient-to-r from-yellow-400 to-amber-500 px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-blue-950 transition hover:-translate-y-0.5"
               >
-                Volver al menu
+                Volver al menú
               </button>
             </div>
           </motion.section>

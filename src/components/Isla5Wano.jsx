@@ -4,12 +4,12 @@ import imageFail from "../image/isla5KaidoFallo.webp";
 import imageSuccess from "../image/isla5KaidoAcierto.webp";
 import { apiFetch } from "../lib/api";
 
-const TOTAL_TIME = 45;
+const TOTAL_TIME = 90;
 
 async function parseApiResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
-    throw new Error("La API no esta disponible. Inicia tambien el servidor backend (npm run start:api).");
+    throw new Error("La API no está disponible. Inicia también el servidor backend (npm run start:api).");
   }
 
   let payload = null;
@@ -23,7 +23,7 @@ async function parseApiResponse(response) {
     throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
   }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new Error("Respuesta invalida del servidor del minijuego.");
+    throw new Error("Respuesta inválida del servidor del minijuego.");
   }
 
   return payload;
@@ -31,6 +31,14 @@ async function parseApiResponse(response) {
 
 function tokenize(text) {
   return String(text || "").trim().split(/\s+/).filter(Boolean);
+}
+
+function normalizeToken(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 }
 
 export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, playError, playSuccess }) {
@@ -46,7 +54,7 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
   const [totalTime, setTotalTime] = useState(TOTAL_TIME);
   const [solvedCount, setSolvedCount] = useState(0);
   const [totalRequirements, setTotalRequirements] = useState(0);
-  const [feedback, setFeedback] = useState({ text: "Activa el Haki de Observacion y revisa el pergamino.", color: "#1d4ed8" });
+  const [feedback, setFeedback] = useState({ text: "Activa el Haki de Observación y revisa el pergamino.", color: "#1d4ed8" });
   const [status, setStatus] = useState("in_progress");
   const [isLoading, setIsLoading] = useState(true);
   const [requestError, setRequestError] = useState("");
@@ -98,7 +106,7 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
       setHoveredWordId(null);
       setSlicedWordId(null);
       setFeedback({
-        text: data.feedback || "Activa el Haki de Observacion y revisa el pergamino.",
+        text: data.feedback || "Activa el Haki de Observación y revisa el pergamino.",
         color: "#1d4ed8",
       });
     } catch (error) {
@@ -172,8 +180,8 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
     >
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-red-900">Isla 5: Pais de Wano - Onigashima</p>
-          <h2 className="mt-2 text-3xl font-black uppercase">El Corte de la Precision (IEEE 830)</h2>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-red-900">Isla 5: País de Wano - Onigashima</p>
+          <h2 className="mt-2 text-3xl font-black uppercase">El Corte de la Precisión (IEEE 830)</h2>
         </div>
 
         <button
@@ -186,18 +194,18 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
       </div>
 
       <div className="mt-4 rounded-2xl border-2 border-zinc-500/60 bg-zinc-950 p-4 text-amber-100">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-300">Dialogo de introduccion</p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-300">Diálogo de introducción</p>
         <p className="mt-2 text-sm font-semibold text-amber-50/95">
-          <span className="text-amber-300">Queen:</span> "Infiltrado, aqui tienes el plano del nuevo sistema de armamento de Onigashima. Kaido no tolera errores."
+          <span className="text-amber-300">Queen:</span> "Infiltrado, aquí tienes el plano del nuevo sistema de armamento de Onigashima. Kaido no tolera errores."
         </p>
         <p className="mt-1 text-sm font-semibold text-amber-50/95">
-          <span className="text-amber-300">King:</span> "Activa tu Haki de Observacion. Detecta palabras debiles y cortalas. Convierte cada termino ambiguo en metrica verificable... o caeremos todos."
+          <span className="text-amber-300">King:</span> "Activa tu Haki de Observación. Detecta palabras débiles y córtalas. Convierte cada término ambiguo en métrica verificable... o caeremos todos."
         </p>
       </div>
 
       <div className="mt-4 rounded-xl border-2 border-red-300/70 bg-red-50 p-3">
         <div className="mb-2 flex items-center justify-between text-xs font-black uppercase tracking-[0.15em] text-red-800">
-          <span>Barra de Incursion</span>
+          <span>Barra de Incursión</span>
           <span>{timeLeft}s</span>
         </div>
         <div className="h-4 overflow-hidden rounded-full bg-red-200">
@@ -237,7 +245,23 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
               <div key={req.id} className="rounded-xl border border-amber-900/25 bg-amber-100/70 p-4 text-sm leading-relaxed text-amber-950">
                 <p>
                   {solved ? (
-                    req.text
+                    tokens.map((part, idx) => {
+                      const isTargetWord = normalizeToken(part) === normalizeToken(req.targetWord);
+
+                      return (
+                        <span
+                          key={`${req.id}-resolved-${idx}`}
+                          className={
+                            isTargetWord
+                              ? "rounded-md bg-emerald-200 px-1 font-black text-emerald-800 ring-1 ring-emerald-500/50"
+                              : ""
+                          }
+                        >
+                          {part}
+                          {idx < tokens.length - 1 ? " " : ""}
+                        </span>
+                      );
+                    })
                   ) : (
                     tokens.map((part, idx) => (
                       <span key={`${req.id}-${idx}`}>
@@ -260,7 +284,7 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
                 <p className="mt-2 text-xs font-semibold text-zinc-800/80">
                   {solved && detail
                     ? `Reemplazo aplicado: ${detail.replacement}. Motivo: ${detail.reason}`
-                    : "Inspeccion en curso."}
+                    : "Inspección en curso."}
                 </p>
               </div>
             );
@@ -281,7 +305,7 @@ export default function Isla5Wano({ onBackToMenu, onIslandCompleted, playClick, 
               <p className="font-semibold text-amber-100/90">
                 {lives <= 0
                   ? "Tus cortes fueron imprecisos y se agotaron tus vidas."
-                  : "Se agotó el tiempo de infiltracion. Kaido detecto inconsistencias en el plano."}
+                  : "Se agotó el tiempo de infiltración. Kaido detectó inconsistencias en el plano."}
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                 <button

@@ -8,7 +8,7 @@ import { apiFetch } from "../lib/api";
 async function parseApiResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
-    throw new Error("La API no esta disponible. Inicia tambien el servidor backend (npm run start:api).");
+    throw new Error("La API no está disponible. Inicia también el servidor backend (npm run start:api).");
   }
 
   let payload = null;
@@ -22,7 +22,7 @@ async function parseApiResponse(response) {
     throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
   }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new Error("Respuesta invalida del servidor del minijuego.");
+    throw new Error("Respuesta inválida del servidor del minijuego.");
   }
 
   return payload;
@@ -177,7 +177,7 @@ export default function Isla6EggHead({ onIslandCompleted, onBackToMenu, playClic
           <div>
             <p className="text-xs font-black uppercase tracking-[0.24em] text-fuchsia-300">Isla 6: EggHead</p>
             <h2 className="mt-2 text-3xl font-black uppercase text-cyan-100 md:text-4xl">
-              DOORS Arcade - Trazabilidad Cuantica
+              DOORS Arcade - Trazabilidad Cuántica
             </h2>
           </div>
           <button
@@ -185,7 +185,7 @@ export default function Isla6EggHead({ onIslandCompleted, onBackToMenu, playClic
             onClick={onBackToMenu}
             className="rounded-lg border border-cyan-500/60 bg-slate-900/70 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-cyan-200 transition hover:bg-cyan-500/10"
           >
-            Volver al menu
+            Volver al menú
           </button>
         </div>
 
@@ -431,7 +431,7 @@ export default function Isla6EggHead({ onIslandCompleted, onBackToMenu, playClic
                     onClick={onBackToMenu}
                     className="rounded-xl border-2 border-red-300 bg-red-500/20 px-5 py-2.5 text-sm font-black uppercase tracking-wide text-red-100 transition hover:bg-red-500/30"
                   >
-                    Salir al menu
+                    Salir al menú
                   </button>
                 </div>
               </div>

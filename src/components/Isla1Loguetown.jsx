@@ -10,7 +10,7 @@ const MAX_LIVES = 3;
 async function parseLoguetownResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
-    throw new Error("La API no esta disponible temporalmente. Reintenta en unos segundos.");
+    throw new Error("La API no está disponible temporalmente. Reintenta en unos segundos.");
   }
 
   let payload = null;
@@ -23,7 +23,7 @@ async function parseLoguetownResponse(response) {
     throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
   }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new Error("Respuesta invalida del servidor del minijuego.");
+    throw new Error("Respuesta inválida del servidor del minijuego.");
   }
   return payload;
 }

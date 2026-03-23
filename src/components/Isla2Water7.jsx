@@ -10,7 +10,7 @@ const MAX_LIVES = 5;
 async function parseResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
-    throw new Error("La API no esta disponible. Inicia tambien el servidor backend (npm run start:api).");
+    throw new Error("La API no está disponible. Inicia también el servidor backend (npm run start:api).");
   }
 
   let payload = null;
@@ -25,7 +25,7 @@ async function parseResponse(response) {
     throw new Error(message);
   }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new Error("Respuesta invalida del servidor del minijuego.");
+    throw new Error("Respuesta inválida del servidor del minijuego.");
   }
 
   return payload;

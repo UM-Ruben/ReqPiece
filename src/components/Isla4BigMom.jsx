@@ -6,12 +6,11 @@ import { apiFetch } from "../lib/api";
 
 const GAME_TIME_SECONDS = 40;
 const MAX_TIME_SECONDS = 60;
-const SWIPE_THRESHOLD = 120;
 
 async function parseApiResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
-    throw new Error("La API no esta disponible. Inicia tambien el servidor backend (npm run start:api).");
+    throw new Error("La API no está disponible. Inicia también el servidor backend (npm run start:api).");
   }
 
   let payload = null;
@@ -25,7 +24,7 @@ async function parseApiResponse(response) {
     throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
   }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new Error("Respuesta invalida del servidor del minijuego.");
+    throw new Error("Respuesta inválida del servidor del minijuego.");
   }
 
   return payload;
@@ -33,6 +32,10 @@ async function parseApiResponse(response) {
 
 export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClick, playError, playSuccess }) {
   const feedbackTimeoutRef = useRef(null);
+  const cardRef = useRef(null);
+  const leftZoneRef = useRef(null);
+  const rightZoneRef = useRef(null);
+  const sustainabilityZoneRef = useRef(null);
   const [currentCard, setCurrentCard] = useState(null);
   const [currentCardNumber, setCurrentCardNumber] = useState(1);
   const [totalCards, setTotalCards] = useState(0);
@@ -190,20 +193,66 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
     void startGame();
   }, [playClick, startGame]);
 
+  const getOverlapArea = (rectA, rectB) => {
+    const overlapWidth = Math.max(0, Math.min(rectA.right, rectB.right) - Math.max(rectA.left, rectB.left));
+    const overlapHeight = Math.max(0, Math.min(rectA.bottom, rectB.bottom) - Math.max(rectA.top, rectB.top));
+    return overlapWidth * overlapHeight;
+  };
+
   const handleDragEnd = async (_, info) => {
     if (outcome || !currentCard || isLocked || isLoading) return;
-    const offsetX = info.offset.x;
+    const cardRect = cardRef.current?.getBoundingClientRect();
+    const leftRect = leftZoneRef.current?.getBoundingClientRect();
+    const rightRect = rightZoneRef.current?.getBoundingClientRect();
+    const sustainabilityRect = sustainabilityZoneRef.current?.getBoundingClientRect();
 
-    if (offsetX <= -SWIPE_THRESHOLD) {
+    if (!cardRect || !leftRect || !rightRect || !sustainabilityRect) {
+      controls.start({ x: 0, y: 0, rotate: 0, opacity: 1, transition: { type: "spring", stiffness: 380, damping: 26 } });
+      return;
+    }
+
+    const overlapScores = {
+      left: getOverlapArea(cardRect, leftRect),
+      right: getOverlapArea(cardRect, rightRect),
+      up: getOverlapArea(cardRect, sustainabilityRect),
+    };
+
+    const cardCenterX = cardRect.left + cardRect.width / 2;
+    const cardCenterY = cardRect.top + cardRect.height / 2;
+    const droppedInForbiddenBottomSideZone =
+      cardCenterY >= sustainabilityRect.top &&
+      (cardCenterX < sustainabilityRect.left || cardCenterX > sustainabilityRect.right);
+
+    if (droppedInForbiddenBottomSideZone) {
+      controls.start({ x: 0, y: 0, rotate: 0, opacity: 1, transition: { type: "spring", stiffness: 380, damping: 26 } });
+      return;
+    }
+
+    const bestMatch = Object.entries(overlapScores).sort((a, b) => b[1] - a[1])[0];
+    const [bestZone, bestArea] = bestMatch;
+
+    if (bestArea <= 0) {
+      controls.start({ x: 0, y: 0, rotate: 0, opacity: 1, transition: { type: "spring", stiffness: 380, damping: 26 } });
+      return;
+    }
+
+    if (bestZone === "up") {
+      await controls.start({ y: 420, rotate: 0, opacity: 0, transition: { duration: 0.2 } });
+      controls.set({ x: 0, y: 0, rotate: 0, opacity: 1 });
+      applyChoice("up");
+      return;
+    }
+
+    if (bestZone === "left") {
       await controls.start({ x: -460, rotate: -16, opacity: 0, transition: { duration: 0.2 } });
-      controls.set({ x: 0, rotate: 0, opacity: 1 });
+      controls.set({ x: 0, y: 0, rotate: 0, opacity: 1 });
       applyChoice("left");
       return;
     }
 
-    if (offsetX >= SWIPE_THRESHOLD) {
+    if (bestZone === "right") {
       await controls.start({ x: 460, rotate: 16, opacity: 0, transition: { duration: 0.2 } });
-      controls.set({ x: 0, rotate: 0, opacity: 1 });
+      controls.set({ x: 0, y: 0, rotate: 0, opacity: 1 });
       applyChoice("right");
       return;
     }
@@ -223,7 +272,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-pink-700">Isla 4: Whole Cake</p>
           <h2 className="mt-2 text-3xl font-black uppercase text-rose-900">Swipe de Requisitos Dulces</h2>
           <p className="mt-2 text-sm font-semibold text-rose-900/85">
-            Arrastra la tarjeta: izquierda = Funcional, derecha = No Funcional. Si fallas o tardas, Big Mom entra en rabieta.
+            Arrastra y suelta la tarjeta en el caldero correcto: izquierda = Funcional, derecha = No Funcional, abajo = Sostenibilidad.
           </p>
         </div>
 
@@ -266,21 +315,29 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
         )}
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-[1fr_1.2fr_1fr] md:items-center">
-        <div className="min-h-[180px] rounded-2xl border-4 border-sky-300 bg-sky-100/80 p-4 text-center shadow-inner">
+      <div className="mt-6 grid gap-4 md:grid-cols-[1fr_1.2fr_1fr] md:grid-rows-[auto_auto] md:items-start">
+        <div
+          ref={leftZoneRef}
+          className="min-h-[180px] rounded-2xl border-4 border-sky-300 bg-sky-100/80 p-4 text-center shadow-inner md:col-start-1 md:row-start-1 md:self-center"
+        >
           <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-700">Caldero Izquierdo</p>
           <p className="mt-2 text-2xl font-black text-sky-900">Funcional</p>
-          <p className="mt-2 text-xs font-semibold text-sky-800/80">Acciones: que hace el sistema.</p>
+          <p className="mt-2 text-xs font-semibold text-sky-800/80">Acciones: qué hace el sistema.</p>
         </div>
 
-        <div className="relative flex min-h-[260px] items-center justify-center">
+        <div className="relative flex min-h-[260px] items-center justify-center md:col-start-2 md:row-start-1">
           {currentCard && !outcome ? (
             <motion.div
               key={`${currentCard.id}-${currentCardNumber}`}
+              ref={cardRef}
               className="w-full max-w-md cursor-grab select-none rounded-3xl border-4 border-yellow-300 bg-gradient-to-b from-yellow-100 to-amber-100 p-6 text-center shadow-[0_12px_28px_rgba(0,0,0,0.2)] active:cursor-grabbing"
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={isLocked || isLoading ? 0 : 0.18}
+              drag
+              dragConstraints={{ left: -640, right: 640, top: 0, bottom: 520 }}
+              dragElastic={
+                isLocked || isLoading
+                  ? 0
+                  : { left: 0.18, right: 0.18, bottom: 0.18, top: 0 }
+              }
               onDragEnd={handleDragEnd}
               animate={controls}
               initial={{ opacity: 0, y: 8, scale: 0.98 }}
@@ -290,7 +347,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
               <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-800">Ingrediente Dulce</p>
               <p className="mt-4 text-lg font-black leading-snug text-amber-950">{currentCard.texto}</p>
               <p className="mt-5 text-xs font-bold uppercase tracking-[0.15em] text-amber-700">
-                {isLoading || isLocked ? "Procesando..." : "Desliza a izquierda o derecha"}
+                {isLoading || isLocked ? "Procesando..." : "Arrastra y suelta en un caldero"}
               </p>
             </motion.div>
           ) : (
@@ -300,29 +357,23 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
           )}
         </div>
 
-        <div className="min-h-[180px] rounded-2xl border-4 border-pink-300 bg-pink-100/85 p-4 text-center shadow-inner">
+        <div
+          ref={rightZoneRef}
+          className="min-h-[180px] rounded-2xl border-4 border-pink-300 bg-pink-100/85 p-4 text-center shadow-inner md:col-start-3 md:row-start-1 md:self-center"
+        >
           <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-700">Caldero Derecho</p>
           <p className="mt-2 text-2xl font-black text-pink-900">No Funcional</p>
           <p className="mt-2 text-xs font-semibold text-pink-800/80">Calidad: rendimiento, seguridad, usabilidad.</p>
         </div>
-      </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <button
-          type="button"
-          disabled={outcome !== "success"}
-          onClick={() => {
-            playClick();
-            onIslandCompleted();
-          }}
-          className={`rounded-xl border-2 px-5 py-3 text-sm font-black uppercase tracking-wide ${
-            outcome === "success"
-              ? "border-emerald-500 bg-emerald-500 text-white"
-              : "cursor-not-allowed border-slate-300 bg-slate-300 text-slate-600"
-          }`}
+        <div
+          ref={sustainabilityZoneRef}
+          className="min-h-[180px] rounded-2xl border-4 border-emerald-300 bg-emerald-100/85 p-4 text-center shadow-inner md:col-start-2 md:row-start-2"
         >
-          Siguiente isla
-        </button>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">Caldero Inferior</p>
+          <p className="mt-2 text-2xl font-black text-emerald-900">Sostenibilidad</p>
+          <p className="mt-2 text-xs font-semibold text-emerald-800/90">Impacto energético, vida útil del hardware y gestión responsable de datos.</p>
+        </div>
       </div>
 
       {outcome === "failure" && (
@@ -337,7 +388,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
               <p className="text-xs font-black uppercase tracking-[0.2em] text-rose-700">Big Mom</p>
               <h3 className="mt-2 text-3xl font-black uppercase text-rose-900">Rabieta de hambre</h3>
               <p className="mt-3 font-semibold text-rose-900/85">
-                El tiempo se agoto. Puntaje final: {score}. Vuelve a preparar el pastel clasificando mejor.
+                El tiempo se agotó. Puntaje final: {score}. Vuelve a preparar el pastel clasificando mejor.
               </p>
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <button
@@ -365,14 +416,18 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
               <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-700">Whole Cake</p>
               <h3 className="mt-2 text-3xl font-black uppercase text-sky-900">Pastel perfecto</h3>
               <p className="mt-3 font-semibold text-sky-900/85">
-                Clasificaste todos los ingredientes. Puntaje final: {score}. Isla 5 desbloqueada.
+                Clasificaste todos los ingredientes. Puntaje final: {score}.
               </p>
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <button
                   type="button"
                   onClick={() => {
                     playClick();
-                    onIslandCompleted();
+                    if (onIslandCompleted) {
+                      onIslandCompleted();
+                    } else {
+                      onBackToMenu?.();
+                    }
                   }}
                   className="rounded-xl border-2 border-emerald-500 bg-emerald-500 px-5 py-2.5 text-sm font-black uppercase tracking-wide text-white"
                 >

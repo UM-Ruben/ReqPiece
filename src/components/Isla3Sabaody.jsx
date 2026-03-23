@@ -31,7 +31,7 @@ function wrapTextLines(ctx, text, maxWidth) {
 async function parseApiResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
-    throw new Error("La API no esta disponible. Inicia tambien el servidor backend (npm run start:api).");
+    throw new Error("La API no está disponible. Inicia también el servidor backend (npm run start:api).");
   }
 
   let payload = null;
@@ -45,7 +45,7 @@ async function parseApiResponse(response) {
     throw new Error(payload?.error || "No se pudo conectar con el servidor del minijuego.");
   }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new Error("Respuesta invalida del servidor del minijuego.");
+    throw new Error("Respuesta inválida del servidor del minijuego.");
   }
 
   return payload;
@@ -425,7 +425,7 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
     if (outcome === "failure") return "El tiempo acabo y la cubierta no quedo asegurada.";
     if (score >= 90) return "Dominaste el arte de distinguir el QUE del COMO.";
     if (score >= minScoreToWin) return "Buena navegacion, pero aun puedes afinar tu punteria analitica.";
-    return "Necesitas reforzar la diferencia entre requisito y solucion.";
+    return "Necesitas reforzar la diferencia entre requisito y solución.";
   }, [lives, minScoreToWin, outcome, score]);
 
   return (
@@ -439,11 +439,11 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
         <div>
           <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-amber-900/30 bg-amber-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-900">
             <Compass className="h-4 w-4" />
-            Isla 3: Archipielago Sabaody
+            Isla 3: Archipiélago Sabaody
           </p>
           <h2 className="text-3xl font-black uppercase tracking-wide text-blue-950 md:text-4xl">Shooter Arcade - QUE vs COMO</h2>
           <p className="mt-2 text-sm font-semibold text-blue-900/85">
-            Destruye barriles de solucion en el aire y deja caer los de problema para rescatar requisitos.
+            Destruye barriles de solución en el aire y deja caer los de problema para rescatar requisitos.
           </p>
         </div>
 
