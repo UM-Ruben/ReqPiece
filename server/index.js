@@ -550,10 +550,15 @@ function syncWholeCakeTimer(game) {
 }
 
 function initWholeCakeGame(sessionObj) {
-  const shuffledDeck = shuffle(WHOLECAKE_REQUIREMENTS_POOL.map((c) => ({ ...c })));
+  const uniquePool = WHOLECAKE_REQUIREMENTS_POOL.filter(
+    (card, idx, arr) => arr.findIndex((candidate) => candidate.id === card.id) === idx
+  );
+  const shuffledDeck = shuffle(uniquePool.map((c) => ({ ...c })));
   sessionObj.wholecake = {
     deck: shuffledDeck,
+    totalCards: shuffledDeck.length,
     cardIndex: 0,
+    correctCount: 0,
     score: 0,
     timeLeft: WHOLECAKE_GAME_TIME_SECONDS,
     status: "in_progress",
@@ -569,12 +574,14 @@ function getOrCreateWholeCakeGame(req) {
 }
 
 function buildWholeCakePayload(game, feedback = "", feedbackTone = "neutral") {
-  const totalCards = game.deck.length;
+  const totalCards = game.totalCards || game.deck.length;
   const currentCard = game.status === "in_progress" ? game.deck[game.cardIndex] || null : null;
 
   return {
     status: game.status,
     score: game.score,
+    correctCount: game.correctCount || 0,
+    requiredCorrect: totalCards,
     timeLeft: game.timeLeft,
     initialTime: WHOLECAKE_GAME_TIME_SECONDS,
     maxTime: WHOLECAKE_MAX_TIME_SECONDS,
@@ -606,8 +613,6 @@ app.post("/api/wholecake/swipe", (req, res) => {
   const {
     side,
     cardId,
-    score: clientScore,
-    timeLeft: clientTimeLeft,
     currentCardNumber: clientCardNumber,
   } = req.body || {};
   if (side !== "left" && side !== "right" && side !== "up") {
@@ -617,38 +622,15 @@ app.post("/api/wholecake/swipe", (req, res) => {
   let currentCard = game.deck[game.cardIndex];
 
   if (typeof cardId === "string" && currentCard && currentCard.id !== cardId) {
-    const looksLikeFreshSession =
-      game.status === "in_progress" &&
-      game.cardIndex === 0 &&
-      game.score === 0 &&
-      game.timeLeft >= WHOLECAKE_GAME_TIME_SECONDS - 1;
-
-    if (looksLikeFreshSession) {
-      const recoveredIndex = game.deck.findIndex((card) => card.id === cardId);
-      if (recoveredIndex >= 0) {
-        game.cardIndex = recoveredIndex;
-        if (Number.isInteger(clientScore)) {
-          game.score = Math.max(0, clientScore);
-        }
-        if (Number.isInteger(clientTimeLeft)) {
-          game.timeLeft = Math.max(0, Math.min(WHOLECAKE_MAX_TIME_SECONDS, clientTimeLeft));
-        }
-        game.lastTickAtMs = Date.now();
-        currentCard = game.deck[game.cardIndex] || null;
-      }
-    }
-
-    if (!currentCard || currentCard.id !== cardId) {
-      return res.json(
-        buildWholeCakePayload(
-          game,
-          Number.isInteger(clientCardNumber)
-            ? `Movimiento desfasado en tarjeta ${clientCardNumber}. Intenta de nuevo.`
-            : "Movimiento desfasado. Intenta de nuevo.",
-          "neutral"
-        )
-      );
-    }
+    return res.json(
+      buildWholeCakePayload(
+        game,
+        Number.isInteger(clientCardNumber)
+          ? `Movimiento desfasado en tarjeta ${clientCardNumber}. Intenta de nuevo.`
+          : "Movimiento desfasado. Intenta de nuevo.",
+        "neutral"
+      )
+    );
   }
 
   if (!currentCard) {
@@ -665,22 +647,23 @@ app.post("/api/wholecake/swipe", (req, res) => {
   let feedbackTone = "neutral";
 
   if (isCorrect) {
+    game.correctCount += 1;
     game.score += 10;
     game.timeLeft = Math.min(WHOLECAKE_MAX_TIME_SECONDS, game.timeLeft + WHOLECAKE_TIME_GAIN_ON_HIT);
     feedback = "¡Delicioso!";
     feedbackTone = "success";
+    game.cardIndex += 1;
   } else {
     game.timeLeft = Math.max(0, game.timeLeft - WHOLECAKE_TIME_PENALTY_ON_FAIL);
-    feedback = "¡Sabor amargo!";
+    feedback = "¡Sabor amargo! Debes acertar las 17 tarjetas para ganar.";
     feedbackTone = "error";
   }
 
-  game.cardIndex += 1;
   game.lastTickAtMs = Date.now();
 
   if (game.timeLeft <= 0) {
     game.status = "failure";
-  } else if (game.cardIndex >= game.deck.length) {
+  } else if (game.correctCount >= game.totalCards) {
     game.status = "victory";
   }
 
@@ -692,7 +675,7 @@ app.post("/api/wholecake/finalize", (req, res) => {
   syncWholeCakeTimer(game);
 
   if (game.status === "in_progress") {
-    game.status = game.cardIndex >= game.deck.length ? "victory" : "failure";
+    game.status = game.correctCount >= (game.totalCards || game.deck.length) ? "victory" : "failure";
   }
 
   res.json(buildWholeCakePayload(game));

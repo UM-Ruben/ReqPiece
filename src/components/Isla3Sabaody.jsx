@@ -7,6 +7,7 @@ import { apiFetch } from "../lib/api";
 
 const MAX_LIVES = 3;
 const DEFAULT_MIN_SCORE_TO_WIN = 180;
+const SHOT_AUDIO_POOL_SIZE = 4;
 
 function wrapTextLines(ctx, text, maxWidth) {
   const words = text.split(" ");
@@ -55,7 +56,8 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
   const animationRef = useRef(0);
   const spawnTimerRef = useRef(0);
   const feedbackTimeoutRef = useRef(null);
-  const shotAudioRef = useRef(null);
+  const shotAudioPoolRef = useRef([]);
+  const shotAudioIndexRef = useRef(0);
   const barrelsRef = useRef([]);
   const lastFrameTimeRef = useRef(0);
   const scoreRef = useRef(0);
@@ -239,9 +241,11 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
 
   useEffect(() => {
     return () => {
-      if (shotAudioRef.current) {
-        shotAudioRef.current.pause();
-        shotAudioRef.current = null;
+      if (shotAudioPoolRef.current.length > 0) {
+        shotAudioPoolRef.current.forEach((audio) => {
+          audio.pause();
+        });
+        shotAudioPoolRef.current = [];
       }
       if (feedbackTimeoutRef.current) {
         window.clearTimeout(feedbackTimeoutRef.current);
@@ -250,13 +254,19 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
   }, []);
 
   useEffect(() => {
-    const shotAudio = new Audio("/audio/disparo.mp3");
-    shotAudio.preload = "auto";
-    shotAudioRef.current = shotAudio;
+    shotAudioPoolRef.current = Array.from({ length: SHOT_AUDIO_POOL_SIZE }, () => {
+      const audio = new Audio("/audio/disparo.mp3");
+      audio.preload = "auto";
+      audio.volume = 1;
+      return audio;
+    });
+    shotAudioIndexRef.current = 0;
 
     return () => {
-      shotAudio.pause();
-      shotAudioRef.current = null;
+      shotAudioPoolRef.current.forEach((audio) => {
+        audio.pause();
+      });
+      shotAudioPoolRef.current = [];
     };
   }, []);
 
@@ -391,11 +401,19 @@ export default function Isla3Sabaody({ onBackToMenu, onIslandCompleted, playClic
   const fireShot = useCallback(() => {
     if (!running || outcome) return;
 
-    if (shotAudioRef.current) {
-      shotAudioRef.current.currentTime = 0;
-      shotAudioRef.current.play().catch(() => {
+    if (shotAudioPoolRef.current.length > 0) {
+      const playableAudio =
+        shotAudioPoolRef.current.find((audio) => audio.paused || audio.ended) ||
+        shotAudioPoolRef.current[shotAudioIndexRef.current % shotAudioPoolRef.current.length];
 
-      });
+      shotAudioIndexRef.current += 1;
+
+      if (playableAudio) {
+        playableAudio.currentTime = 0;
+        playableAudio.play().catch(() => {
+
+        });
+      }
     }
 
     const { x, y } = crosshairRef.current;

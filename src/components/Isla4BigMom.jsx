@@ -39,6 +39,8 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
   const [currentCard, setCurrentCard] = useState(null);
   const [currentCardNumber, setCurrentCardNumber] = useState(1);
   const [totalCards, setTotalCards] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [requiredCorrect, setRequiredCorrect] = useState(0);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_TIME_SECONDS);
   const [initialTime, setInitialTime] = useState(GAME_TIME_SECONDS);
@@ -73,6 +75,8 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
       setMaxTime(data.maxTime || MAX_TIME_SECONDS);
       setCurrentCardNumber(data.currentCardNumber || 1);
       setTotalCards(data.totalCards || 0);
+      setCorrectCount(data.correctCount || 0);
+      setRequiredCorrect(data.requiredCorrect || data.totalCards || 0);
       setCurrentCard(data.card || null);
 
       if (data.status === "victory") {
@@ -313,6 +317,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
 
       <div className="mt-3 flex flex-wrap items-center gap-3 text-sm font-black uppercase tracking-[0.08em]">
         <span className="rounded-lg bg-sky-500 px-3 py-2 text-white">Puntaje: {score}</span>
+        <span className="rounded-lg bg-emerald-500 px-3 py-2 text-white">Aciertos: {correctCount}/{requiredCorrect || totalCards || 0}</span>
         <span className="rounded-lg bg-yellow-400 px-3 py-2 text-slate-900">Tarjeta: {Math.min(currentCardNumber, totalCards || 0)}/{totalCards || 0}</span>
         {feedback.text && (
           <span className="rounded-lg px-3 py-2 text-white" style={{ backgroundColor: feedback.color }}>
@@ -394,7 +399,8 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
               <p className="text-xs font-black uppercase tracking-[0.2em] text-rose-700">Big Mom</p>
               <h3 className="mt-2 text-3xl font-black uppercase text-rose-900">Rabieta de hambre</h3>
               <p className="mt-3 font-semibold text-rose-900/85">
-                El tiempo se agotó. Puntaje final: {score}. Vuelve a preparar el pastel clasificando mejor.
+                Debes acertar todas las tarjetas ({requiredCorrect || totalCards || 17}/{requiredCorrect || totalCards || 17}).
+                Resultado: {correctCount}/{requiredCorrect || totalCards || 17}. Puntaje final: {score}.
               </p>
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <button
