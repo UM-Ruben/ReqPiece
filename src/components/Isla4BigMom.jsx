@@ -70,7 +70,8 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
   }, []);
 
   const applyPayload = useCallback(
-    (data) => {
+    (data, options = {}) => {
+      const { forceProgressReset = false } = options;
       setScore(data.score);
       setLives(data.lives ?? 3);
       setMaxLives(data.maxLives ?? 3);
@@ -79,7 +80,13 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
       setMaxTime(data.maxTime || MAX_TIME_SECONDS);
       setCurrentCardNumber(data.currentCardNumber || 1);
       setTotalCards(data.totalCards || 0);
-      setCorrectCount(data.correctCount || 0);
+      const nextCorrectCount = Number.isInteger(data.correctCount) ? data.correctCount : 0;
+      setCorrectCount((prev) => {
+        if (forceProgressReset || data.status !== "in_progress") {
+          return nextCorrectCount;
+        }
+        return Math.max(prev, nextCorrectCount);
+      });
       setRequiredCorrect(data.requiredCorrect || data.totalCards || 0);
       setCurrentCard(data.card || null);
 
@@ -103,7 +110,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
     try {
       const response = await apiFetch("/api/wholecake/start", { method: "POST" });
       const data = await parseApiResponse(response);
-      applyPayload(data);
+      applyPayload(data, { forceProgressReset: true });
       setFeedback({ text: "", color: "#0369a1" });
       controls.set({ x: 0, y: 0, rotate: 0, opacity: 1 });
     } catch (error) {

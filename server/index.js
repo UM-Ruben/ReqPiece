@@ -632,6 +632,22 @@ app.post("/api/wholecake/swipe", (req, res) => {
     return res.status(400).json({ error: "side debe ser 'left', 'right' o 'up'." });
   }
 
+  const clientProgressCandidates = [];
+  if (Number.isInteger(clientCorrectCount)) {
+    clientProgressCandidates.push(clientCorrectCount);
+  }
+  if (Number.isInteger(clientCardNumber)) {
+    clientProgressCandidates.push(clientCardNumber - 1);
+  }
+  if (Number.isInteger(clientScore)) {
+    clientProgressCandidates.push(Math.floor(clientScore / 10));
+  }
+
+  const recoveredClientProgress =
+    clientProgressCandidates.length > 0
+      ? Math.max(...clientProgressCandidates.map((value) => Math.max(0, value)))
+      : null;
+
   let currentCard = game.deck[game.cardIndex];
 
   if (typeof cardId === "string" && currentCard && currentCard.id !== cardId) {
@@ -647,13 +663,8 @@ app.post("/api/wholecake/swipe", (req, res) => {
       const totalCards = game.totalCards || game.deck.length;
       const requestedCardIndex = game.deck.findIndex((card) => card.id === cardId);
 
-      const recoveredFromCounter = Number.isInteger(clientCorrectCount)
-        ? clientCorrectCount
-        : Number.isInteger(clientCardNumber)
-          ? clientCardNumber - 1
-          : Number.isInteger(clientScore)
-            ? Math.floor(clientScore / 10)
-            : 0;
+      const recoveredFromCounter =
+        recoveredClientProgress === null ? requestedCardIndex : recoveredClientProgress;
 
       const expectedIndex = Math.max(0, Math.min(totalCards - 1, recoveredFromCounter));
 
@@ -667,7 +678,7 @@ app.post("/api/wholecake/swipe", (req, res) => {
         }
 
         game.cardIndex = expectedIndex;
-        game.correctCount = expectedIndex;
+        game.correctCount = Math.max(game.correctCount || 0, expectedIndex);
         game.score = game.correctCount * 10;
 
         if (Number.isInteger(clientTimeLeft)) {
