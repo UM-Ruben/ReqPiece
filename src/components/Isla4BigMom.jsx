@@ -42,6 +42,8 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
   const [correctCount, setCorrectCount] = useState(0);
   const [requiredCorrect, setRequiredCorrect] = useState(0);
   const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [maxLives, setMaxLives] = useState(3);
   const [timeLeft, setTimeLeft] = useState(GAME_TIME_SECONDS);
   const [initialTime, setInitialTime] = useState(GAME_TIME_SECONDS);
   const [maxTime, setMaxTime] = useState(MAX_TIME_SECONDS);
@@ -70,6 +72,8 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
   const applyPayload = useCallback(
     (data) => {
       setScore(data.score);
+      setLives(data.lives ?? 3);
+      setMaxLives(data.maxLives ?? 3);
       setTimeLeft(data.timeLeft);
       setInitialTime(data.initialTime || GAME_TIME_SECONDS);
       setMaxTime(data.maxTime || MAX_TIME_SECONDS);
@@ -167,6 +171,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
             cardId: currentCard.id,
             score,
             timeLeft,
+            lives,
             correctCount,
             currentCardNumber,
           }),
@@ -187,7 +192,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
         setIsLocked(false);
       }
     },
-    [applyPayload, correctCount, currentCard, currentCardNumber, isLoading, isLocked, outcome, playError, playSuccess, score, showFeedback, timeLeft]
+    [applyPayload, correctCount, currentCard, currentCardNumber, isLoading, isLocked, lives, outcome, playError, playSuccess, score, showFeedback, timeLeft]
   );
 
   useEffect(() => {
@@ -319,6 +324,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
       <div className="mt-3 flex flex-wrap items-center gap-3 text-sm font-black uppercase tracking-[0.08em]">
         <span className="rounded-lg bg-sky-500 px-3 py-2 text-white">Puntaje: {score}</span>
         <span className="rounded-lg bg-emerald-500 px-3 py-2 text-white">Aciertos: {correctCount}/{requiredCorrect || totalCards || 0}</span>
+        <span className="rounded-lg bg-red-500 px-3 py-2 text-white">Vidas: {lives}/{maxLives}</span>
         <span className="rounded-lg bg-yellow-400 px-3 py-2 text-slate-900">Tarjeta: {Math.min(currentCardNumber, totalCards || 0)}/{totalCards || 0}</span>
         {feedback.text && (
           <span className="rounded-lg px-3 py-2 text-white" style={{ backgroundColor: feedback.color }}>
@@ -401,7 +407,7 @@ export default function Isla4Sabaody({ onBackToMenu, onIslandCompleted, playClic
               <h3 className="mt-2 text-3xl font-black uppercase text-rose-900">Rabieta de hambre</h3>
               <p className="mt-3 font-semibold text-rose-900/85">
                 Debes acertar todas las tarjetas ({requiredCorrect || totalCards || 17}/{requiredCorrect || totalCards || 17}).
-                Resultado: {correctCount}/{requiredCorrect || totalCards || 17}. Puntaje final: {score}.
+                Resultado: {correctCount}/{requiredCorrect || totalCards || 17}. Vidas restantes: {lives}/{maxLives}. Puntaje final: {score}.
               </p>
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <button

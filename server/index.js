@@ -18,6 +18,7 @@ import {
 } from "./sabaodyData.js";
 import {
   WHOLECAKE_GAME_TIME_SECONDS,
+  WHOLECAKE_MAX_LIVES,
   WHOLECAKE_MAX_TIME_SECONDS,
   WHOLECAKE_REQUIREMENTS_POOL,
   WHOLECAKE_TIME_GAIN_ON_HIT,
@@ -565,6 +566,7 @@ function initWholeCakeGame(sessionObj) {
     cardIndex: 0,
     correctCount: 0,
     score: 0,
+    lives: WHOLECAKE_MAX_LIVES,
     timeLeft: WHOLECAKE_GAME_TIME_SECONDS,
     status: "in_progress",
     lastTickAtMs: Date.now(),
@@ -587,6 +589,8 @@ function buildWholeCakePayload(game, feedback = "", feedbackTone = "neutral") {
     score: game.score,
     correctCount: game.correctCount || 0,
     requiredCorrect: totalCards,
+    lives: game.lives,
+    maxLives: WHOLECAKE_MAX_LIVES,
     timeLeft: game.timeLeft,
     initialTime: WHOLECAKE_GAME_TIME_SECONDS,
     maxTime: WHOLECAKE_MAX_TIME_SECONDS,
@@ -620,6 +624,7 @@ app.post("/api/wholecake/swipe", (req, res) => {
     cardId,
     score: clientScore,
     timeLeft: clientTimeLeft,
+    lives: clientLives,
     correctCount: clientCorrectCount,
     currentCardNumber: clientCardNumber,
   } = req.body || {};
@@ -635,6 +640,7 @@ app.post("/api/wholecake/swipe", (req, res) => {
       game.cardIndex === 0 &&
       game.correctCount === 0 &&
       game.score === 0 &&
+      game.lives === WHOLECAKE_MAX_LIVES &&
       game.timeLeft >= WHOLECAKE_GAME_TIME_SECONDS - 1;
 
     if (looksLikeFreshSession) {
@@ -666,6 +672,9 @@ app.post("/api/wholecake/swipe", (req, res) => {
 
         if (Number.isInteger(clientTimeLeft)) {
           game.timeLeft = Math.max(0, Math.min(WHOLECAKE_MAX_TIME_SECONDS, clientTimeLeft));
+        }
+        if (Number.isInteger(clientLives)) {
+          game.lives = Math.max(0, Math.min(WHOLECAKE_MAX_LIVES, clientLives));
         }
 
         game.lastTickAtMs = Date.now();
@@ -709,14 +718,18 @@ app.post("/api/wholecake/swipe", (req, res) => {
     // Keep counters aligned in case of serverless recovery drift.
     game.correctCount = Math.max(game.correctCount, game.cardIndex);
   } else {
+    game.lives -= 1;
     game.timeLeft = Math.max(0, game.timeLeft - WHOLECAKE_TIME_PENALTY_ON_FAIL);
-    feedback = "¡Sabor amargo! Debes acertar las 17 tarjetas para ganar.";
+    feedback = `¡Sabor amargo! Pierdes 1 vida. Te quedan ${Math.max(0, game.lives)}.`;
     feedbackTone = "error";
   }
 
   game.lastTickAtMs = Date.now();
 
-  if (game.timeLeft <= 0) {
+  if (game.lives <= 0) {
+    game.lives = 0;
+    game.status = "failure";
+  } else if (game.timeLeft <= 0) {
     game.status = "failure";
   } else if (game.correctCount >= game.totalCards || game.cardIndex >= game.deck.length) {
     game.status = "victory";

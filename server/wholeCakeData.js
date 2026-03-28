@@ -2,6 +2,7 @@ export const WHOLECAKE_GAME_TIME_SECONDS = 40;
 export const WHOLECAKE_MAX_TIME_SECONDS = 60;
 export const WHOLECAKE_TIME_GAIN_ON_HIT = 2;
 export const WHOLECAKE_TIME_PENALTY_ON_FAIL = 7;
+export const WHOLECAKE_MAX_LIVES = 3;
 
 export const WHOLECAKE_REQUIREMENTS_POOL = [
   {  id: "wc-1",
